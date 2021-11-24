@@ -195,7 +195,7 @@ export class RuleDataService implements IRuleDataService {
     return new RuleDataClient({
       indexInfo,
       resourceInstaller: this.resourceInstaller,
-      isWriteEnabled: this.isWriteEnabled(),
+      isWriteEnabled: this.isWriteEnabled(), // TODO write logic to disable if the specified registrationContext is in the disabled list
       isWriterCacheEnabled: this.isWriterCacheEnabled(),
       waitUntilReadyForReading,
       waitUntilReadyForWriting,
