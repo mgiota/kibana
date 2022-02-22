@@ -16,6 +16,7 @@ import { ALERT_STATUS, AlertStatus } from '@kbn/rule-data-utils';
 import { euiStyled } from '../../../../../../../../src/plugins/kibana_react/common';
 import { loadAlertAggregations as loadRuleAggregations } from '../../../../../../../plugins/triggers_actions_ui/public';
 import { AlertStatusFilterButton } from '../../../../../common/typings';
+import { BASE_RAC_ALERTS_API_PATH } from '../../../../../../rule_registry/common/constants';
 import { ParsedTechnicalFields } from '../../../../../../rule_registry/common/parse_technical_fields';
 import { ParsedExperimentalFields } from '../../../../../../rule_registry/common/parse_experimental_fields';
 import { ExperimentalBadge } from '../../../../components/shared/experimental_badge';
@@ -129,8 +130,24 @@ function AlertsPage() {
     }
   }
 
+  async function loadAlerts() {
+    console.log('!!loadAlertts');
+    try {
+      const res = await http.fetch(`${BASE_RAC_ALERTS_API_PATH}/find`, {
+        method: 'POST',
+        body: JSON.stringify({
+          query: { match: { [ALERT_STATUS]: 'recovered' } },
+        }),
+      });
+      console.log(res, '!!recovered alerts');
+    } catch (e) {
+      console.log(e, '!!error');
+    }
+  }
+
   useEffect(() => {
     loadRuleStats();
+    loadAlerts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
