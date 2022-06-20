@@ -92,9 +92,9 @@ import { Provider, rulesPageStateContainer, useRulesPageStateContainer } from '.
 const ENTER_KEY = 13;
 
 export interface RulesListProps {
-  filteredRulesTypes: string[] | undefined; // try to add optional
-  filteredSolutions: string[] | undefined;
-  showActionFilter: boolean;
+  filteredRulesTypes?: string[] | undefined; // try to add optional
+  filteredSolutions?: string[] | undefined;
+  showActionFilter?: boolean;
 }
 
 interface RuleTypeState {
@@ -115,7 +115,7 @@ const initialPercentileOptions = Object.values(Percentiles).map((percentile) => 
   key: percentile,
 }));
 
-export const RulesList = ({
+const RulesList = ({
   filteredRulesTypes,
   filteredSolutions,
   showActionFilter = true,
@@ -767,96 +767,91 @@ export const RulesList = ({
   };
 
   return (
-    <Provider value={rulesPageStateContainer}>
-      <section data-test-subj="rulesList">
-        <DeleteModalConfirmation
-          onDeleted={async () => {
-            setRulesToDelete([]);
-            setSelectedIds([]);
-            await loadData();
+    // <Provider value={rulesPageStateContainer}>
+    <section data-test-subj="rulesList">
+      <DeleteModalConfirmation
+        onDeleted={async () => {
+          setRulesToDelete([]);
+          setSelectedIds([]);
+          await loadData();
+        }}
+        onErrors={async () => {
+          // Refresh the rules from the server, some rules may have beend deleted
+          await loadData();
+          setRulesToDelete([]);
+        }}
+        onCancel={() => {
+          setRulesToDelete([]);
+        }}
+        apiDeleteCall={deleteRules}
+        idsToDelete={rulesToDelete}
+        singleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.singleTitle', {
+          defaultMessage: 'rule',
+        })}
+        multipleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.multipleTitle', {
+          defaultMessage: 'rules',
+        })}
+        setIsLoadingState={(isLoading: boolean) => {
+          setRulesState({ ...rulesState, isLoading });
+        }}
+      />
+      <UpdateApiKeyModalConfirmation
+        onCancel={() => {
+          setRulesToUpdateAPIKey([]);
+        }}
+        idsToUpdate={rulesToUpdateAPIKey}
+        apiUpdateApiKeyCall={updateAPIKey}
+        setIsLoadingState={(isLoading: boolean) => {
+          setRulesState({ ...rulesState, isLoading });
+        }}
+        onUpdated={async () => {
+          setRulesToUpdateAPIKey([]);
+          await loadData();
+        }}
+      />
+      <EuiSpacer size="xs" />
+      {getRulesList()}
+      {ruleFlyoutVisible && (
+        <RuleAdd
+          consumer={ALERTS_FEATURE_ID}
+          onClose={() => {
+            setRuleFlyoutVisibility(false);
           }}
-          onErrors={async () => {
-            // Refresh the rules from the server, some rules may have beend deleted
-            await loadData();
-            setRulesToDelete([]);
-          }}
-          onCancel={() => {
-            setRulesToDelete([]);
-          }}
-          apiDeleteCall={deleteRules}
-          idsToDelete={rulesToDelete}
-          singleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.singleTitle', {
-            defaultMessage: 'rule',
-          })}
-          multipleTitle={i18n.translate(
-            'xpack.triggersActionsUI.sections.rulesList.multipleTitle',
-            {
-              defaultMessage: 'rules',
-            }
-          )}
-          setIsLoadingState={(isLoading: boolean) => {
-            setRulesState({ ...rulesState, isLoading });
-          }}
+          actionTypeRegistry={actionTypeRegistry}
+          ruleTypeRegistry={ruleTypeRegistry}
+          ruleTypeIndex={ruleTypesState.data}
+          onSave={loadData}
         />
-        <UpdateApiKeyModalConfirmation
-          onCancel={() => {
-            setRulesToUpdateAPIKey([]);
+      )}
+      {editFlyoutVisible && currentRuleToEdit && (
+        <RuleEdit
+          initialRule={currentRuleToEdit}
+          onClose={() => {
+            setEditFlyoutVisibility(false);
           }}
-          idsToUpdate={rulesToUpdateAPIKey}
-          apiUpdateApiKeyCall={updateAPIKey}
-          setIsLoadingState={(isLoading: boolean) => {
-            setRulesState({ ...rulesState, isLoading });
-          }}
-          onUpdated={async () => {
-            setRulesToUpdateAPIKey([]);
-            await loadData();
-          }}
+          actionTypeRegistry={actionTypeRegistry}
+          ruleTypeRegistry={ruleTypeRegistry}
+          ruleType={
+            ruleTypesState.data.get(currentRuleToEdit.ruleTypeId) as RuleType<string, string>
+          }
+          onSave={loadData}
         />
-        <EuiSpacer size="xs" />
-        {getRulesList()}
-        {ruleFlyoutVisible && (
-          <RuleAdd
-            consumer={ALERTS_FEATURE_ID}
-            onClose={() => {
-              setRuleFlyoutVisibility(false);
-            }}
-            actionTypeRegistry={actionTypeRegistry}
-            ruleTypeRegistry={ruleTypeRegistry}
-            ruleTypeIndex={ruleTypesState.data}
-            onSave={loadData}
-          />
-        )}
-        {editFlyoutVisible && currentRuleToEdit && (
-          <RuleEdit
-            initialRule={currentRuleToEdit}
-            onClose={() => {
-              setEditFlyoutVisibility(false);
-            }}
-            actionTypeRegistry={actionTypeRegistry}
-            ruleTypeRegistry={ruleTypeRegistry}
-            ruleType={
-              ruleTypesState.data.get(currentRuleToEdit.ruleTypeId) as RuleType<string, string>
-            }
-            onSave={loadData}
-          />
-        )}
-      </section>
-    </Provider>
+      )}
+    </section>
+    // </Provider>
   );
 };
 
-function WrappedRulesPage() {
+function WrappedRulesPage(props: RulesListProps) {
   return (
     <Provider value={rulesPageStateContainer}>
-      <RulesList filteredRulesTypes={[]} filteredSolutions={[]} showActionFilter={true} />
+      <RulesList {...props} />
     </Provider>
   );
 }
 
-// export { WrappedRulesPage as RulesPage };
-
 // eslint-disable-next-line import/no-default-export
-export { RulesList as default };
+export { WrappedRulesPage as default };
 
 const noPermissionPrompt = (
   <EuiEmptyPrompt
