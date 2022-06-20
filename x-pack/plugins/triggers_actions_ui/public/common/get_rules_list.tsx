@@ -8,7 +8,15 @@
 import React from 'react';
 import { RulesList } from '../application/sections';
 import type { RulesListProps } from '../application/sections/rules_list/components/rules_list';
+import {
+  Provider,
+  rulesPageStateContainer,
+} from '../application/sections/rules_list/state_container';
 
 export const getRulesListLazy = (props: RulesListProps) => {
-  return <RulesList {...props} />;
+  return (
+    <Provider value={rulesPageStateContainer}>
+      <RulesList {...props} />
+    </Provider>
+  );
 };
