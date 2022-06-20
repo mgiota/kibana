@@ -767,76 +767,81 @@ export const RulesList = ({
   };
 
   return (
-    <section data-test-subj="rulesList">
-      <DeleteModalConfirmation
-        onDeleted={async () => {
-          setRulesToDelete([]);
-          setSelectedIds([]);
-          await loadData();
-        }}
-        onErrors={async () => {
-          // Refresh the rules from the server, some rules may have beend deleted
-          await loadData();
-          setRulesToDelete([]);
-        }}
-        onCancel={() => {
-          setRulesToDelete([]);
-        }}
-        apiDeleteCall={deleteRules}
-        idsToDelete={rulesToDelete}
-        singleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.singleTitle', {
-          defaultMessage: 'rule',
-        })}
-        multipleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.multipleTitle', {
-          defaultMessage: 'rules',
-        })}
-        setIsLoadingState={(isLoading: boolean) => {
-          setRulesState({ ...rulesState, isLoading });
-        }}
-      />
-      <UpdateApiKeyModalConfirmation
-        onCancel={() => {
-          setRulesToUpdateAPIKey([]);
-        }}
-        idsToUpdate={rulesToUpdateAPIKey}
-        apiUpdateApiKeyCall={updateAPIKey}
-        setIsLoadingState={(isLoading: boolean) => {
-          setRulesState({ ...rulesState, isLoading });
-        }}
-        onUpdated={async () => {
-          setRulesToUpdateAPIKey([]);
-          await loadData();
-        }}
-      />
-      <EuiSpacer size="xs" />
-      {getRulesList()}
-      {ruleFlyoutVisible && (
-        <RuleAdd
-          consumer={ALERTS_FEATURE_ID}
-          onClose={() => {
-            setRuleFlyoutVisibility(false);
+    <Provider value={rulesPageStateContainer}>
+      <section data-test-subj="rulesList">
+        <DeleteModalConfirmation
+          onDeleted={async () => {
+            setRulesToDelete([]);
+            setSelectedIds([]);
+            await loadData();
           }}
-          actionTypeRegistry={actionTypeRegistry}
-          ruleTypeRegistry={ruleTypeRegistry}
-          ruleTypeIndex={ruleTypesState.data}
-          onSave={loadData}
-        />
-      )}
-      {editFlyoutVisible && currentRuleToEdit && (
-        <RuleEdit
-          initialRule={currentRuleToEdit}
-          onClose={() => {
-            setEditFlyoutVisibility(false);
+          onErrors={async () => {
+            // Refresh the rules from the server, some rules may have beend deleted
+            await loadData();
+            setRulesToDelete([]);
           }}
-          actionTypeRegistry={actionTypeRegistry}
-          ruleTypeRegistry={ruleTypeRegistry}
-          ruleType={
-            ruleTypesState.data.get(currentRuleToEdit.ruleTypeId) as RuleType<string, string>
-          }
-          onSave={loadData}
+          onCancel={() => {
+            setRulesToDelete([]);
+          }}
+          apiDeleteCall={deleteRules}
+          idsToDelete={rulesToDelete}
+          singleTitle={i18n.translate('xpack.triggersActionsUI.sections.rulesList.singleTitle', {
+            defaultMessage: 'rule',
+          })}
+          multipleTitle={i18n.translate(
+            'xpack.triggersActionsUI.sections.rulesList.multipleTitle',
+            {
+              defaultMessage: 'rules',
+            }
+          )}
+          setIsLoadingState={(isLoading: boolean) => {
+            setRulesState({ ...rulesState, isLoading });
+          }}
         />
-      )}
-    </section>
+        <UpdateApiKeyModalConfirmation
+          onCancel={() => {
+            setRulesToUpdateAPIKey([]);
+          }}
+          idsToUpdate={rulesToUpdateAPIKey}
+          apiUpdateApiKeyCall={updateAPIKey}
+          setIsLoadingState={(isLoading: boolean) => {
+            setRulesState({ ...rulesState, isLoading });
+          }}
+          onUpdated={async () => {
+            setRulesToUpdateAPIKey([]);
+            await loadData();
+          }}
+        />
+        <EuiSpacer size="xs" />
+        {getRulesList()}
+        {ruleFlyoutVisible && (
+          <RuleAdd
+            consumer={ALERTS_FEATURE_ID}
+            onClose={() => {
+              setRuleFlyoutVisibility(false);
+            }}
+            actionTypeRegistry={actionTypeRegistry}
+            ruleTypeRegistry={ruleTypeRegistry}
+            ruleTypeIndex={ruleTypesState.data}
+            onSave={loadData}
+          />
+        )}
+        {editFlyoutVisible && currentRuleToEdit && (
+          <RuleEdit
+            initialRule={currentRuleToEdit}
+            onClose={() => {
+              setEditFlyoutVisibility(false);
+            }}
+            actionTypeRegistry={actionTypeRegistry}
+            ruleTypeRegistry={ruleTypeRegistry}
+            ruleType={
+              ruleTypesState.data.get(currentRuleToEdit.ruleTypeId) as RuleType<string, string>
+            }
+            onSave={loadData}
+          />
+        )}
+      </section>
+    </Provider>
   );
 };
 

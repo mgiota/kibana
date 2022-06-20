@@ -26,7 +26,7 @@ import { HealthCheck } from './components/health_check';
 import { HealthContextProvider } from './context/health_context';
 import { useKibana } from '../common/lib/kibana';
 import { suspendedComponentWithProps } from './lib/suspended_component_with_props';
-
+import { Provider, rulesPageStateContainer } from './sections/rules_list/state_container';
 const ActionsConnectorsList = lazy(
   () => import('./sections/actions_connectors_list/components/actions_connectors_list')
 );
@@ -146,41 +146,42 @@ export const TriggersActionsUIHome: React.FunctionComponent<RouteComponentProps<
       />
 
       <EuiSpacer size="l" />
-
-      <HealthContextProvider>
-        <HealthCheck waitForCheck={true}>
-          <Switch>
-            {canShowActions && (
+      <Provider value={rulesPageStateContainer}>
+        <HealthContextProvider>
+          <HealthCheck waitForCheck={true}>
+            <Switch>
+              {canShowActions && (
+                <Route
+                  exact
+                  path={routeToConnectors}
+                  component={suspendedComponentWithProps(ActionsConnectorsList, 'xl')}
+                />
+              )}
               <Route
                 exact
-                path={routeToConnectors}
-                component={suspendedComponentWithProps(ActionsConnectorsList, 'xl')}
+                path={routeToRules}
+                component={suspendedComponentWithProps(RulesList, 'xl')}
               />
-            )}
-            <Route
-              exact
-              path={routeToRules}
-              component={suspendedComponentWithProps(RulesList, 'xl')}
-            />
-            {isInternalShareableComponentsSandboxEnabled && (
-              <Route
-                exact
-                path={routeToInternalShareableComponentsSandbox}
-                component={suspendedComponentWithProps(InternalShareableComponentsSandbox, 'xl')}
-              />
-            )}
-            {isInternalAlertsTableEnabled ? (
-              <Route
-                exact
-                path={routeToInternalAlerts}
-                component={suspendedComponentWithProps(AlertsPage, 'xl')}
-              />
-            ) : (
-              <Redirect to={routeToRules} />
-            )}
-          </Switch>
-        </HealthCheck>
-      </HealthContextProvider>
+              {isInternalShareableComponentsSandboxEnabled && (
+                <Route
+                  exact
+                  path={routeToInternalShareableComponentsSandbox}
+                  component={suspendedComponentWithProps(InternalShareableComponentsSandbox, 'xl')}
+                />
+              )}
+              {isInternalAlertsTableEnabled ? (
+                <Route
+                  exact
+                  path={routeToInternalAlerts}
+                  component={suspendedComponentWithProps(AlertsPage, 'xl')}
+                />
+              ) : (
+                <Redirect to={routeToRules} />
+              )}
+            </Switch>
+          </HealthCheck>
+        </HealthContextProvider>
+      </Provider>
     </>
   );
 };
