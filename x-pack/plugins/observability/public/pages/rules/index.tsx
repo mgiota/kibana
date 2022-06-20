@@ -439,6 +439,8 @@ function RulesPage() {
               filteredRulesTypes: observabilityRuleTypeRegistry.list(),
               filteredSolutions: OBSERVABILITY_SOLUTIONS,
               showActionFilter: false,
+              ruleDetailsLink: 'alerts/rules/:ruleId',
+              showInterval: false,
             })}
           </EuiFlexItem>
         </EuiFlexGroup>

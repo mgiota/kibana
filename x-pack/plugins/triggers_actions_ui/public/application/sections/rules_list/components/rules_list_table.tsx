@@ -119,6 +119,7 @@ export interface RulesListTableProps {
   onUnsnoozeRule: (rule: RuleTableItem) => Promise<void>;
   renderCollapsedItemActions?: (rule: RuleTableItem) => React.ReactNode;
   renderRuleError?: (rule: RuleTableItem) => React.ReactNode;
+  showInterval?: boolean;
 }
 
 interface ConvertRulesToTableItemsOpts {
@@ -175,6 +176,7 @@ export const RulesListTable = (props: RulesListTableProps) => {
     onUnsnoozeRule = EMPTY_HANDLER,
     renderCollapsedItemActions = EMPTY_RENDER,
     renderRuleError = EMPTY_RENDER,
+    showInterval = true,
   } = props;
 
   const [tagPopoverOpenIndex, setTagPopoverOpenIndex] = useState<number>(-1);
@@ -418,66 +420,70 @@ export const RulesListTable = (props: RulesListTableProps) => {
           );
         },
       },
-      {
-        field: 'schedule.interval',
-        width: '6%',
-        name: i18n.translate(
-          'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.scheduleTitle',
-          { defaultMessage: 'Interval' }
-        ),
-        sortable: false,
-        truncateText: false,
-        'data-test-subj': 'rulesTableCell-interval',
-        render: (interval: string, rule: RuleTableItem) => {
-          const durationString = formatDuration(interval);
-          return (
-            <>
-              <EuiFlexGroup direction="row" gutterSize="xs">
-                <EuiFlexItem grow={false}>{durationString}</EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  {rule.showIntervalWarning && (
-                    <EuiToolTip
-                      data-test-subj={`ruleInterval-config-tooltip-${rule.index}`}
-                      title={i18n.translate(
-                        'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalTooltipTitle',
-                        {
-                          defaultMessage: 'Below configured minimum interval',
-                        }
-                      )}
-                      content={i18n.translate(
-                        'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalTooltipText',
-                        {
-                          defaultMessage:
-                            'Rule interval of {interval} is below the minimum configured interval of {minimumInterval}. This may impact alerting performance.',
-                          values: {
-                            minimumInterval: formatDuration(
-                              config.minimumScheduleInterval!.value,
-                              true
-                            ),
-                            interval: formatDuration(interval, true),
-                          },
-                        }
-                      )}
-                      position="top"
-                    >
-                      <EuiButtonIcon
-                        color="text"
-                        data-test-subj={`ruleInterval-config-icon-${rule.index}`}
-                        onClick={() => onRuleEditClick(rule)}
-                        iconType="flag"
-                        aria-label={i18n.translate(
-                          'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalIconAriaLabel',
-                          { defaultMessage: 'Below configured minimum interval' }
+      ...(showInterval
+        ? [
+            {
+              field: 'schedule.interval',
+              width: '6%',
+              name: i18n.translate(
+                'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.scheduleTitle',
+                { defaultMessage: 'Interval' }
+              ),
+              sortable: false,
+              truncateText: false,
+              'data-test-subj': 'rulesTableCell-interval',
+              render: (interval: string, rule: RuleTableItem) => {
+                const durationString = formatDuration(interval);
+                return (
+                  <>
+                    <EuiFlexGroup direction="row" gutterSize="xs">
+                      <EuiFlexItem grow={false}>{durationString}</EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        {rule.showIntervalWarning && (
+                          <EuiToolTip
+                            data-test-subj={`ruleInterval-config-tooltip-${rule.index}`}
+                            title={i18n.translate(
+                              'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalTooltipTitle',
+                              {
+                                defaultMessage: 'Below configured minimum interval',
+                              }
+                            )}
+                            content={i18n.translate(
+                              'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalTooltipText',
+                              {
+                                defaultMessage:
+                                  'Rule interval of {interval} is below the minimum configured interval of {minimumInterval}. This may impact alerting performance.',
+                                values: {
+                                  minimumInterval: formatDuration(
+                                    config.minimumScheduleInterval!.value,
+                                    true
+                                  ),
+                                  interval: formatDuration(interval, true),
+                                },
+                              }
+                            )}
+                            position="top"
+                          >
+                            <EuiButtonIcon
+                              color="text"
+                              data-test-subj={`ruleInterval-config-icon-${rule.index}`}
+                              onClick={() => onRuleEditClick(rule)}
+                              iconType="flag"
+                              aria-label={i18n.translate(
+                                'xpack.triggersActionsUI.sections.rulesList.rulesListTable.columns.intervalIconAriaLabel',
+                                { defaultMessage: 'Below configured minimum interval' }
+                              )}
+                            />
+                          </EuiToolTip>
                         )}
-                      />
-                    </EuiToolTip>
-                  )}
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            </>
-          );
-        },
-      },
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </>
+                );
+              },
+            },
+          ]
+        : []),
       {
         field: 'executionStatus.lastDuration',
         width: '12%',

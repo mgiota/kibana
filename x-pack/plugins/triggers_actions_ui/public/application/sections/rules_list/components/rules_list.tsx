@@ -95,6 +95,8 @@ export interface RulesListProps {
   filteredRulesTypes?: string[] | undefined; // try to add optional
   filteredSolutions?: string[] | undefined;
   showActionFilter?: boolean;
+  ruleDetailsLink?: string | undefined;
+  showInterval?: boolean;
 }
 
 interface RuleTypeState {
@@ -119,6 +121,8 @@ const RulesList = ({
   filteredRulesTypes,
   filteredSolutions,
   showActionFilter = true,
+  ruleDetailsLink,
+  showInterval = true,
 }: RulesListProps) => {
   const history = useHistory();
   const {
@@ -674,6 +678,7 @@ const RulesList = ({
       </EuiFlexGroup>
       <EuiHorizontalRule margin="xs" />
       <RulesListTable
+        showInterval={showInterval}
         canExecuteActions={canExecuteActions}
         isLoading={rulesState.isLoading || ruleTypesState.isLoading || isPerformingAction}
         rulesState={rulesState}
@@ -687,7 +692,11 @@ const RulesList = ({
         onPage={setPage}
         onRuleChanged={() => loadData()}
         onRuleClick={(rule) => {
-          history.push(routeToRuleDetails.replace(`:ruleId`, rule.id));
+          let detailsLink = routeToRuleDetails;
+          if (ruleDetailsLink) {
+            detailsLink = ruleDetailsLink;
+          }
+          history.push(detailsLink.replace(`:ruleId`, rule.id));
         }}
         onRuleEditClick={(rule) => {
           if (rule.isEditable && isRuleTypeEditableInContext(rule.ruleTypeId)) {
