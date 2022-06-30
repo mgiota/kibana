@@ -8,12 +8,14 @@
 import expect from '@kbn/expect';
 import { FtrProviderContext } from '../../../ftr_provider_context';
 
-export default ({ getService }: FtrProviderContext) => {
+export default ({ getService, getPageObjects }: FtrProviderContext) => {
   const esArchiver = getService('esArchiver');
   const testSubjects = getService('testSubjects');
+  const pageObjects = getPageObjects(['common']);
   const supertest = getService('supertest');
   const find = getService('find');
   const retry = getService('retry');
+  const browser = getService('browser');
   const RULE_ENDPOINT = '/api/alerting/rule';
 
   async function createRule(rule: any): Promise<string> {
@@ -148,6 +150,63 @@ export default ({ getService }: FtrProviderContext) => {
           expect(rows[0].enabled).to.be('Disabled');
           return true;
         });
+      });
+    });
+
+    describe('Url and filtering synchronization', () => {
+      let logThresholdRuleId: string;
+      let logThresholdRuleId2: string;
+
+      before(async () => {
+        const logThresholdRule = {
+          params: {
+            timeSize: 5,
+            timeUnit: 'm',
+            count: { value: 75, comparator: 'more than' },
+            criteria: [{ field: 'log.level', comparator: 'equals', value: 'error' }],
+          },
+          consumer: 'alerts',
+          schedule: { interval: '1m' },
+          tags: [],
+          name: 'error-log',
+          rule_type_id: 'logs.alert.document.count',
+          notify_when: 'onActionGroupChange',
+          actions: [],
+        };
+        const logThresholdRule2 = {
+          params: {
+            timeSize: 5,
+            timeUnit: 'm',
+            count: { value: 85, comparator: 'more than' },
+            criteria: [{ field: 'log.level', comparator: 'equals', value: 'error' }],
+          },
+          consumer: 'alerts',
+          schedule: { interval: '1m' },
+          tags: [],
+          name: 'error-log2',
+          rule_type_id: 'logs.alert.document.count',
+          notify_when: 'onActionGroupChange',
+          actions: [],
+        };
+        logThresholdRuleId = await createRule(logThresholdRule);
+        logThresholdRuleId2 = await createRule(logThresholdRule2);
+        await pageObjects.common.navigateToUrlWithBrowserHistory(
+          'observability',
+          '/alerts/rules',
+          `?_a=(lastResponse:!(ok))`,
+          { ensureCurrentUrl: false }
+        );
+      });
+      after(async () => {
+        await deleteRuleById(logThresholdRuleId);
+        await deleteRuleById(logThresholdRuleId2);
+      });
+      it('should sync page state with URL', async () => {
+        const tableRows = await find.allByCssSelector('.euiTableRow');
+        const rows = await getRulesList(tableRows);
+        expect(rows.length).to.be(2);
+        const currentUrl = await browser.getCurrentUrl();
+        expect(currentUrl).to.contain('?_a=(lastResponse%3A!(ok)');
       });
     });
 
