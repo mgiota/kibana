@@ -51,6 +51,7 @@ export const InfrastructurePage = ({ match }: RouteComponentProps) => {
   });
 
   const kibana = useKibana();
+  const { i18n: i18nService } = kibana.services;
 
   const { source, createDerivedIndexPattern } = useSourceContext();
 
@@ -76,7 +77,11 @@ export const InfrastructurePage = ({ match }: RouteComponentProps) => {
                     })}
                   />
                   {setHeaderActionMenu && theme$ && (
-                    <HeaderMenuPortal setHeaderActionMenu={setHeaderActionMenu} theme$={theme$}>
+                    <HeaderMenuPortal
+                      setHeaderActionMenu={setHeaderActionMenu}
+                      theme$={theme$}
+                      i18n={i18nService}
+                    >
                       <EuiHeaderLinks gutterSize="xs">
                         <EuiHeaderLink color={'text'} {...settingsLinkProps}>
                           {settingsTabTitle}
