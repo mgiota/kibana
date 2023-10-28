@@ -20,6 +20,7 @@
       "dataViews",
       "dataViewEditor",
       "embeddable",
+      "presentationUtil",
       "exploratoryView",
       "features",
       "files",
@@ -35,7 +36,7 @@
       "unifiedSearch",
       "visualizations",
       "dashboard",
-      "expressions"
+      "expressions",
     ],
     "optionalPlugins": [
       "discover",
@@ -51,7 +52,8 @@
       "kibanaUtils",
       "unifiedSearch",
       "stackAlerts",
-      "spaces"
+      "spaces",
+      "embeddable"
     ],
     "extraPublicDirs": [
       "common"

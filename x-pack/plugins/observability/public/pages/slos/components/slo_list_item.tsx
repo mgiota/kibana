@@ -19,7 +19,12 @@ import { i18n } from '@kbn/i18n';
 import { ALL_VALUE, HistoricalSummaryResponse, SLOWithSummaryResponse } from '@kbn/slo-schema';
 import type { Rule } from '@kbn/triggers-actions-ui-plugin/public';
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  LazySavedObjectSaveModalDashboard,
+  SaveModalDashboardProps,
+  withSuspense,
+} from '@kbn/presentation-util-plugin/public';
 import { SloDeleteConfirmationModal } from '../../../components/slo/delete_confirmation_modal/slo_delete_confirmation_modal';
 import { rulesLocatorID, sloFeatureId } from '../../../../common';
 import { SLO_BURN_RATE_RULE_TYPE_ID } from '../../../../common/constants';
@@ -38,6 +43,9 @@ import {
 } from '../../slo_edit/helpers/process_slo_form_values';
 import { SloBadges } from './badges/slo_badges';
 import { SloSummary } from './slo_summary';
+import { SLO_EMBEDDABLE } from '../../../embeddable/slo/overview/slo_embeddable';
+
+const SavedObjectSaveModalDashboard = withSuspense(LazySavedObjectSaveModalDashboard);
 
 export interface SloListItemProps {
   slo: SLOWithSummaryResponse;
@@ -55,13 +63,15 @@ export function SloListItem({
   activeAlerts,
 }: SloListItemProps) {
   const {
-    application: { navigateToUrl },
+    application: { navigateToUrl, capabilities },
     http: { basePath },
     share: {
       url: { locators },
     },
     triggersActionsUi: { getAddRuleFlyout: AddRuleFlyout },
+    embeddable,
   } = useKibana().services;
+  console.log(embeddable, '!!embeddable');
   const { hasWriteCapabilities } = useCapabilities();
   const queryClient = useQueryClient();
 
@@ -73,7 +83,10 @@ export function SloListItem({
   const [isActionsPopoverOpen, setIsActionsPopoverOpen] = useState(false);
   const [isAddRuleFlyoutOpen, setIsAddRuleFlyoutOpen] = useState(false);
   const [isDeleteConfirmationModalOpen, setDeleteConfirmationModalOpen] = useState(false);
-
+  const [dashboardAttachmentReady, setDashboardAttachmentReady] = useState<boolean>(false);
+  const canEditDashboards = capabilities.dashboard?.createNew ?? false;
+  console.log(capabilities, '!!capabilities');
+  console.log(canEditDashboards, '!!canEdit');
   const handleClickActions = () => {
     setIsActionsPopoverOpen(!isActionsPopoverOpen);
   };
@@ -128,6 +141,36 @@ export function SloListItem({
   const handleDeleteCancel = () => {
     setDeleteConfirmationModalOpen(false);
   };
+
+  const handleAttachToDashboard = () => {
+    console.log('!!attach to Dashboard');
+    setDashboardAttachmentReady(true);
+  };
+
+  const onAttachToDashboardSaveCallback: SaveModalDashboardProps['onSave'] = useCallback(
+    ({ dashboardId, newTitle, newDescription }) => {
+      const stateTransfer = embeddable!.getStateTransfer();
+      const embeddableInput = {
+        title: newTitle,
+        description: newDescription,
+        sloId: slo.id,
+        sloInstanceId: slo.instanceId,
+      };
+
+      const state = {
+        input: embeddableInput,
+        type: SLO_EMBEDDABLE,
+      };
+
+      const path = dashboardId === 'new' ? '#/create' : `#/view/${dashboardId}`;
+
+      stateTransfer.navigateToWithEmbeddablePackage('dashboards', {
+        state,
+        path,
+      });
+    },
+    [embeddable, slo.id, slo.instanceId]
+  );
 
   return (
     <EuiPanel data-test-subj="sloItem" hasBorder hasShadow={false}>
@@ -260,6 +303,15 @@ export function SloListItem({
                     defaultMessage: 'Delete',
                   })}
                 </EuiContextMenuItem>,
+                <EuiContextMenuItem
+                  key="attachToDashboard"
+                  onClick={handleAttachToDashboard}
+                  data-test-subj="sloActinsAttachToDashboard"
+                >
+                  {i18n.translate('xpack.observability.slo.item.actions.attachToDashboard', {
+                    defaultMessage: 'Attach to Dashboard',
+                  })}
+                </EuiContextMenuItem>,
               ]}
             />
           </EuiPopover>
@@ -284,6 +336,26 @@ export function SloListItem({
           slo={slo}
           onCancel={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
+        />
+      ) : null}
+
+      {dashboardAttachmentReady ? (
+        <SavedObjectSaveModalDashboard
+          objectType={i18n.translate(
+            'xpack.observability.slo.item.actions.attachToDashboard.objectTypeLabel',
+            { defaultMessage: 'SLO Overview' }
+          )}
+          documentInfo={{
+            title: i18n.translate(
+              'xpack.observability.slo.item.actions.attachToDashboard.attachmentTitle',
+              { defaultMessage: 'SLO Overview' }
+            ),
+          }}
+          canSaveByReference={false}
+          onClose={() => {
+            setDashboardAttachmentReady(false);
+          }}
+          onSave={onAttachToDashboardSaveCallback}
         />
       ) : null}
     </EuiPanel>

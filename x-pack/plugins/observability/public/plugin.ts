@@ -58,6 +58,7 @@ import {
 } from '@kbn/triggers-actions-ui-plugin/public';
 import { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 import { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
+import type { PresentationUtilPluginStart } from '@kbn/presentation-util-plugin/public';
 import { observabilityAppId, observabilityFeatureId } from '../common';
 import {
   ALERTS_PATH,
@@ -113,6 +114,7 @@ export interface ObservabilityPublicPluginsSetup {
   home?: HomePublicPluginSetup;
   usageCollection: UsageCollectionSetup;
   embeddable: EmbeddableSetup;
+  presentationUtil?: PresentationUtilPluginStart;
 }
 
 export interface ObservabilityPublicPluginsStart {
@@ -141,6 +143,7 @@ export interface ObservabilityPublicPluginsStart {
   home?: HomePublicPluginStart;
   cloud?: CloudStart;
   aiops: AiopsPluginStart;
+  presentationUtil?: PresentationUtilPluginStart;
 }
 
 export type ObservabilityPublicStart = ReturnType<Plugin['start']>;
