@@ -13,6 +13,7 @@ import { useFetchRulesForSlo } from '../../../hooks/slo/use_fetch_rules_for_slo'
 import { SloListEmpty } from './slo_list_empty';
 import { SloListError } from './slo_list_error';
 import { SloListItem } from './slo_list_item';
+import { usePluginContext } from '../../../hooks/use_plugin_context';
 
 export interface Props {
   sloList: SLOWithSummaryResponse[];
@@ -21,6 +22,7 @@ export interface Props {
 }
 
 export function SloListItems({ sloList, loading, error }: Props) {
+  const { EmbeddableSloOverview } = usePluginContext();
   const sloIdsAndInstanceIds = sloList.map(
     (slo) => [slo.id, slo.instanceId ?? ALL_VALUE] as [string, string]
   );
@@ -45,6 +47,7 @@ export function SloListItems({ sloList, loading, error }: Props) {
     <EuiFlexGroup direction="column" gutterSize="s">
       {sloList.map((slo) => (
         <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
+          <EmbeddableSloOverview sloId={slo.id} sloInstanceId={slo.instanceId} />
           <SloListItem
             activeAlerts={activeAlertsBySlo.get(slo)}
             rules={rulesBySlo?.[slo.id]}

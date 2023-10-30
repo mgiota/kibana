@@ -26,7 +26,7 @@ import { ConfigSchema, ObservabilityPublicPluginsStart } from '../plugin';
 import { routes } from '../routes/routes';
 import { ObservabilityRuleTypeRegistry } from '../rules/create_observability_rule_type_registry';
 import { HideableReactQueryDevTools } from './hideable_react_query_dev_tools';
-
+import { EmbeddableSloProps } from '../../embeddable/slo/overview/types';
 function App() {
   return (
     <>
@@ -54,6 +54,7 @@ export const renderApp = ({
   usageCollection,
   isDev,
   kibanaVersion,
+  EmbeddableSloOverview,
 }: {
   core: CoreStart;
   config: ConfigSchema;
@@ -64,6 +65,7 @@ export const renderApp = ({
   usageCollection: UsageCollectionSetup;
   isDev?: boolean;
   kibanaVersion: string;
+  EmeddableSloOverview: (props: EmbeddableSloProps) => JSX.Element;
 }) => {
   const { element, history, theme$ } = appMountParameters;
   const i18nCore = core.i18n;
@@ -107,6 +109,7 @@ export const renderApp = ({
                       appMountParameters,
                       observabilityRuleTypeRegistry,
                       ObservabilityPageTemplate,
+                      EmbeddableSloOverview,
                     }}
                   >
                     <Router history={history}>

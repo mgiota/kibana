@@ -80,6 +80,7 @@ import {
   ObservabilityRuleTypeRegistry,
 } from './rules/create_observability_rule_type_registry';
 import { registerObservabilityRuleTypes } from './rules/register_observability_rule_types';
+import { getEmbeddableSloOverview } from './embeddable/slo/overview/slo_embeddable_overview_component';
 
 export interface ConfigSchema {
   unsafe: {
@@ -256,6 +257,7 @@ export class Plugin
         ObservabilityPageTemplate: pluginsStart.observabilityShared.navigation.PageTemplate,
         plugins: { ...pluginsStart, ruleTypeRegistry, actionTypeRegistry },
         usageCollection: pluginsSetup.usageCollection,
+        EmbeddableSloOverview: getEmbeddableSloOverview(coreStart, pluginsStart),
       });
     };
 
@@ -406,6 +408,7 @@ export class Plugin
     return {
       observabilityRuleTypeRegistry: this.observabilityRuleTypeRegistry,
       useRulesLink: createUseRulesLink(),
+      EmbeddableSloOverview: getEmbeddableSloOverview(coreStart, pluginsStart),
     };
   }
 }

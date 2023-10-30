@@ -10,12 +10,14 @@ import { createContext } from 'react';
 import type { LazyObservabilityPageTemplateProps } from '@kbn/observability-shared-plugin/public';
 import { ObservabilityRuleTypeRegistry } from '../../rules/create_observability_rule_type_registry';
 import { ConfigSchema } from '../../plugin';
+import { EmbeddableSloProps } from '../../embeddable/slo/overview/types';
 
 export interface PluginContextValue {
   config: ConfigSchema;
   appMountParameters: AppMountParameters;
   observabilityRuleTypeRegistry: ObservabilityRuleTypeRegistry;
   ObservabilityPageTemplate: React.ComponentType<LazyObservabilityPageTemplateProps>;
+  EmbeddableSloOverview: (props: EmbeddableSloProps) => JSX.Element;
 }
 
 export const PluginContext = createContext({} as PluginContextValue);

@@ -85,8 +85,6 @@ export function SloListItem({
   const [isDeleteConfirmationModalOpen, setDeleteConfirmationModalOpen] = useState(false);
   const [dashboardAttachmentReady, setDashboardAttachmentReady] = useState<boolean>(false);
   const canEditDashboards = capabilities.dashboard?.createNew ?? false;
-  console.log(capabilities, '!!capabilities');
-  console.log(canEditDashboards, '!!canEdit');
   const handleClickActions = () => {
     setIsActionsPopoverOpen(!isActionsPopoverOpen);
   };
