@@ -20,7 +20,12 @@ import { paths } from '../../../../common/locators/paths';
 
 import { EmbeddableSloProps } from './types';
 
-export function SloOverview({ sloId, sloInstanceId, lastReloadRequestTime }: EmbeddableSloProps) {
+export function SloOverview({
+  sloId,
+  sloInstanceId,
+  lastReloadRequestTime,
+  style,
+}: EmbeddableSloProps) {
   const {
     uiSettings,
     application: { navigateToUrl },
@@ -124,9 +129,19 @@ export function SloOverview({ sloId, sloInstanceId, lastReloadRequestTime }: Emb
           },
         ]
       : [];
+
+  const customStyle =
+    style !== undefined
+      ? {
+          size: {
+            width: style.width,
+            height: style.height,
+          },
+        }
+      : '';
   return (
     <>
-      <Chart>
+      <Chart {...customStyle}>
         <Settings
           onElementClick={() => {
             navigateToUrl(

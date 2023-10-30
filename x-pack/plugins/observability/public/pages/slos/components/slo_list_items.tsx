@@ -4,9 +4,10 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiButton } from '@elastic/eui';
 import { ALL_VALUE, SLOWithSummaryResponse } from '@kbn/slo-schema';
-import React from 'react';
+import React, { useState } from 'react';
+import { i18n } from '@kbn/i18n';
 import { useFetchActiveAlerts } from '../../../hooks/slo/use_fetch_active_alerts';
 import { useFetchHistoricalSummary } from '../../../hooks/slo/use_fetch_historical_summary';
 import { useFetchRulesForSlo } from '../../../hooks/slo/use_fetch_rules_for_slo';
@@ -43,26 +44,52 @@ export function SloListItems({ sloList, loading, error }: Props) {
     return <SloListError />;
   }
 
+  const [showCardsOn, setShowCardsOn] = useState(false);
+
   return (
-    <EuiFlexGroup direction="column" gutterSize="s">
-      {sloList.map((slo) => (
-        <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
-          <EmbeddableSloOverview sloId={slo.id} sloInstanceId={slo.instanceId} />
-          <SloListItem
-            activeAlerts={activeAlertsBySlo.get(slo)}
-            rules={rulesBySlo?.[slo.id]}
-            historicalSummary={
-              historicalSummaries.find(
-                (historicalSummary) =>
-                  historicalSummary.sloId === slo.id &&
-                  historicalSummary.instanceId === (slo.instanceId ?? ALL_VALUE)
-              )?.data
-            }
-            historicalSummaryLoading={historicalSummaryLoading}
-            slo={slo}
-          />
-        </EuiFlexItem>
-      ))}
-    </EuiFlexGroup>
+    <>
+      <EuiButton
+        style={{ width: 50, marginBottom: 10 }}
+        onClick={() => {
+          setShowCardsOn((isOn) => !isOn);
+        }}
+        data-test-subj="o11ySloListItemsToggleButton"
+      >
+        {showCardsOn
+          ? i18n.translate('xpack.observability.sloListItems.toggleButtonLabel', {
+              defaultMessage: 'Show Table',
+            })
+          : i18n.translate('xpack.observability.sloListItems.toggleButtonLabel', {
+              defaultMessage: 'Show Cards',
+            })}
+      </EuiButton>
+      <EuiFlexGroup direction="column" gutterSize="s">
+        {sloList.map((slo) => (
+          <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
+            {showCardsOn ? (
+              <EmbeddableSloOverview
+                sloId={slo.id}
+                sloInstanceId={slo.instanceId}
+                style={{ width: 250, height: 250 }}
+              />
+            ) : (
+              <SloListItem
+                activeAlerts={activeAlertsBySlo.get(slo)}
+                rules={rulesBySlo?.[slo.id]}
+                historicalSummary={
+                  historicalSummaries.find(
+                    (historicalSummary) =>
+                      historicalSummary.sloId === slo.id &&
+                      historicalSummary.instanceId === (slo.instanceId ?? ALL_VALUE)
+                  )?.data
+                }
+                historicalSummaryLoading={historicalSummaryLoading}
+                slo={slo}
+              />
+            )}
+          </EuiFlexItem>
+        ))}
+      </EuiFlexGroup>
+    </>
   );
 }

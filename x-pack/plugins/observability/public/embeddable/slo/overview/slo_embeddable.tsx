@@ -60,7 +60,7 @@ export class SLOEmbeddable extends AbstractEmbeddable<SloEmbeddableInput, Embedd
     );
     this.input.lastReloadRequestTime = Date.now();
 
-    const { sloId, sloInstanceId } = this.getInput();
+    const { sloId, sloInstanceId, style } = this.getInput();
     const queryClient = new QueryClient();
 
     const I18nContext = this.deps.i18n.Context;
@@ -69,6 +69,7 @@ export class SLOEmbeddable extends AbstractEmbeddable<SloEmbeddableInput, Embedd
         <KibanaContextProvider services={this.deps}>
           <QueryClientProvider client={queryClient}>
             <SloOverview
+              style={style}
               sloId={sloId}
               sloInstanceId={sloInstanceId}
               lastReloadRequestTime={this.input.lastReloadRequestTime}

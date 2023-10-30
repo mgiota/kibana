@@ -5,11 +5,13 @@
  * 2.0.
  */
 import { EmbeddableInput } from '@kbn/embeddable-plugin/public';
+import { CSSProperties } from 'react';
 
 export interface EmbeddableSloProps {
   sloId: string | undefined;
   sloInstanceId: string | undefined;
   lastReloadRequestTime?: number | undefined;
+  style?: CSSProperties;
 }
 
 export type SloEmbeddableInput = EmbeddableInput & EmbeddableSloProps;
