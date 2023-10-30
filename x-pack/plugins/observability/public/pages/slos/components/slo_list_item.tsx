@@ -44,6 +44,7 @@ import {
 import { SloBadges } from './badges/slo_badges';
 import { SloSummary } from './slo_summary';
 import { SLO_EMBEDDABLE } from '../../../embeddable/slo/overview/slo_embeddable';
+import { useCasesModal } from '../../../hooks/use_cases_modal';
 
 const SavedObjectSaveModalDashboard = withSuspense(LazySavedObjectSaveModalDashboard);
 
@@ -71,7 +72,7 @@ export function SloListItem({
     triggersActionsUi: { getAddRuleFlyout: AddRuleFlyout },
     embeddable,
   } = useKibana().services;
-  console.log(embeddable, '!!embeddable');
+
   const { hasWriteCapabilities } = useCapabilities();
   const queryClient = useQueryClient();
 
@@ -169,6 +170,8 @@ export function SloListItem({
     },
     [embeddable, slo.id, slo.instanceId]
   );
+
+  const openCasesModalCallback = useCasesModal(SLO_EMBEDDABLE);
 
   return (
     <EuiPanel data-test-subj="sloItem" hasBorder hasShadow={false}>
@@ -308,6 +311,20 @@ export function SloListItem({
                 >
                   {i18n.translate('xpack.observability.slo.item.actions.attachToDashboard', {
                     defaultMessage: 'Attach to Dashboard',
+                  })}
+                </EuiContextMenuItem>,
+                <EuiContextMenuItem
+                  key="attachToCase"
+                  onClick={() => {
+                    openCasesModalCallback({
+                      sloId: slo.id,
+                      sloInstanceId: slo.instanceId,
+                    });
+                  }}
+                  data-test-subj="sloActionsAttachToCase"
+                >
+                  {i18n.translate('xpack.observability.slo.item.actions.attachToCase', {
+                    defaultMessage: 'Attach to Case',
                   })}
                 </EuiContextMenuItem>,
               ]}

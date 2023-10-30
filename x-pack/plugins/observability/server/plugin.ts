@@ -26,6 +26,7 @@ import { RuleRegistryPluginSetupContract } from '@kbn/rule-registry-plugin/serve
 import { SharePluginSetup } from '@kbn/share-plugin/server';
 import { SpacesPluginSetup } from '@kbn/spaces-plugin/server';
 import { UsageCollectionSetup } from '@kbn/usage-collection-plugin/server';
+import type { CasesSetup } from '@kbn/cases-plugin/server';
 import { ObservabilityConfig } from '.';
 import { casesFeatureId, observabilityFeatureId, sloFeatureId } from '../common';
 import { SLO_BURN_RATE_RULE_TYPE_ID } from '../common/constants';
@@ -52,6 +53,7 @@ import {
 } from './services/slo';
 
 import { uiSettings } from './ui_settings';
+import { registerCasesPersistableState } from './register_cases';
 
 export type ObservabilityPluginSetup = ReturnType<ObservabilityPlugin['setup']>;
 
@@ -64,6 +66,7 @@ interface PluginSetup {
   spaces?: SpacesPluginSetup;
   usageCollection?: UsageCollectionSetup;
   cloud?: CloudSetup;
+  cases?: CasesSetup;
 }
 
 interface PluginStart {
@@ -167,6 +170,8 @@ export class ObservabilityPlugin implements Plugin<ObservabilityPluginSetup> {
     let annotationsApiPromise: Promise<AnnotationsAPI> | undefined;
 
     core.uiSettings.register(uiSettings);
+
+    registerCasesPersistableState(plugins.cases, this.logger);
 
     if (config.annotations.enabled) {
       annotationsApiPromise = bootstrapAnnotations({

@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { CasesDeepLinkId, CasesUiStart, getCasesDeepLinks } from '@kbn/cases-plugin/public';
+import {
+  CasesDeepLinkId,
+  CasesUiSetup,
+  CasesUiStart,
+  getCasesDeepLinks,
+} from '@kbn/cases-plugin/public';
 import type { ChartsPluginStart } from '@kbn/charts-plugin/public';
 import type { CloudStart } from '@kbn/cloud-plugin/public';
 import type { ContentManagementPublicStart } from '@kbn/content-management-plugin/public';
@@ -116,6 +121,7 @@ export interface ObservabilityPublicPluginsSetup {
   usageCollection: UsageCollectionSetup;
   embeddable: EmbeddableSetup;
   presentationUtil?: PresentationUtilPluginStart;
+  cases: CasesUiSetup;
 }
 
 export interface ObservabilityPublicPluginsStart {
@@ -246,6 +252,13 @@ export class Plugin
       const [coreStart, pluginsStart] = await coreSetup.getStartServices();
 
       const { ruleTypeRegistry, actionTypeRegistry } = pluginsStart.triggersActionsUi;
+      const cases = pluginsSetup.cases;
+      if (cases) {
+        const { registerSloOverviewAttachment } = await import(
+          './cases/register_slo_overview_attachment'
+        );
+        registerSloOverviewAttachment(cases, coreStart, pluginsStart);
+      }
 
       return renderApp({
         appMountParameters: params,

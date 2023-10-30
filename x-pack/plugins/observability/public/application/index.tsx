@@ -87,6 +87,9 @@ export const renderApp = ({
     usageCollection?.components.ApplicationUsageTrackingProvider ?? React.Fragment;
   const CloudProvider = plugins.cloud?.CloudContextProvider ?? React.Fragment;
   const PresentationContextProvider = plugins.presentationUtil?.ContextProvider ?? React.Fragment;
+  const CasesContext = plugins.cases.ui.getCasesContext() ?? React.Fragment;
+  const casesPermissions = plugins.cases?.helpers.canUseCases();
+
   ReactDOM.render(
     <PresentationContextProvider>
       <EuiErrorBoundary>
@@ -119,12 +122,14 @@ export const renderApp = ({
                             coreStart={core}
                             data-test-subj="observabilityMainContainer"
                           >
-                            <QueryClientProvider client={queryClient}>
-                              <HasDataContextProvider>
-                                <App />
-                              </HasDataContextProvider>
-                              <HideableReactQueryDevTools />
-                            </QueryClientProvider>
+                            <CasesContext owner={[]} permissions={casesPermissions!}>
+                              <QueryClientProvider client={queryClient}>
+                                <HasDataContextProvider>
+                                  <App />
+                                </HasDataContextProvider>
+                                <HideableReactQueryDevTools />
+                              </QueryClientProvider>
+                            </CasesContext>
                           </RedirectAppLinks>
                         </i18nCore.Context>
                       </EuiThemeProvider>
