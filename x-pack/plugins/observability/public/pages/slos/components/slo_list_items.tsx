@@ -63,16 +63,10 @@ export function SloListItems({ sloList, loading, error }: Props) {
               defaultMessage: 'Show Cards',
             })}
       </EuiButton>
-      <EuiFlexGroup direction="column" gutterSize="s">
-        {sloList.map((slo) => (
-          <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
-            {showCardsOn ? (
-              <EmbeddableSloOverview
-                sloId={slo.id}
-                sloInstanceId={slo.instanceId}
-                style={{ width: 250, height: 250 }}
-              />
-            ) : (
+      {!showCardsOn && (
+        <EuiFlexGroup direction="column" gutterSize="s">
+          {sloList.map((slo) => (
+            <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
               <SloListItem
                 activeAlerts={activeAlertsBySlo.get(slo)}
                 rules={rulesBySlo?.[slo.id]}
@@ -86,10 +80,23 @@ export function SloListItems({ sloList, loading, error }: Props) {
                 historicalSummaryLoading={historicalSummaryLoading}
                 slo={slo}
               />
-            )}
-          </EuiFlexItem>
-        ))}
-      </EuiFlexGroup>
+            </EuiFlexItem>
+          ))}
+        </EuiFlexGroup>
+      )}
+      {showCardsOn && (
+        <EuiFlexGroup gutterSize="s">
+          {sloList.map((slo) => (
+            <EuiFlexItem key={`${slo.id}-${slo.instanceId ?? ALL_VALUE}`}>
+              <EmbeddableSloOverview
+                sloId={slo.id}
+                sloInstanceId={slo.instanceId}
+                style={{ width: 250, height: 250 }}
+              />
+            </EuiFlexItem>
+          ))}
+        </EuiFlexGroup>
+      )}
     </>
   );
 }
