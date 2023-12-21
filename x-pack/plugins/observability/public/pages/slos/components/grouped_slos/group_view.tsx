@@ -9,7 +9,6 @@ import { i18n } from '@kbn/i18n';
 import React, { useState } from 'react';
 import { SloListEmpty } from '../slo_list_empty';
 import { GroupListView } from './group_list_view';
-import { useUrlSearchState } from '../../hooks/use_url_search_state';
 
 // useFetchSloList to get all slos for the specified tag, pass a query -> in progress
 // add pagination in this file, probably not, I need pagination within accordion
