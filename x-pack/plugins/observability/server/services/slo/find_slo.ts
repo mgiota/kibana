@@ -12,7 +12,7 @@ import { SLORepository } from './slo_repository';
 import { SLOSummary, Sort, SummarySearchClient } from './summary_search_client';
 
 const DEFAULT_PAGE = 1;
-const DEFAULT_PER_PAGE = 25;
+const DEFAULT_PER_PAGE = 1;
 const MAX_PER_PAGE = 5000;
 
 export class FindSLO {
@@ -36,6 +36,7 @@ export class FindSLO {
       perPage: sloSummaryList.perPage,
       total: sloSummaryList.total,
       results: sloListWithSummary,
+      aggs: sloSummaryList.aggs,
     });
   }
 }
@@ -61,6 +62,7 @@ function toPagination(params: FindSLOParams): Pagination {
   return {
     page: !isNaN(page) && page >= 1 ? page : DEFAULT_PAGE,
     perPage: !isNaN(perPage) && perPage >= 1 ? perPage : DEFAULT_PER_PAGE,
+    // perPage: 1,
   };
 }
 

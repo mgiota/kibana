@@ -43,8 +43,16 @@ export interface Sort {
   direction: 'asc' | 'desc';
 }
 
+interface Aggregation {
+  groupByTags: {
+    terms: {
+      field: string;
+    };
+  };
+}
+
 export interface SummarySearchClient {
-  search(kqlQuery: string, sort: Sort, pagination: Pagination): Promise<Paginated<SLOSummary>>;
+  search(kqlQuery: string, sort: Sort, pagination: Pagination);
 }
 
 export class DefaultSummarySearchClient implements SummarySearchClient {
@@ -54,11 +62,7 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
     private spaceId: string
   ) {}
 
-  async search(
-    kqlQuery: string,
-    sort: Sort,
-    pagination: Pagination
-  ): Promise<Paginated<SLOSummary>> {
+  async search(kqlQuery: string, sort: Sort, pagination: Pagination) {
     try {
       const summarySearch = await this.esClient.search<EsSummaryDocument>({
         index: SLO_SUMMARY_DESTINATION_INDEX_PATTERN,
@@ -78,12 +82,31 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
           },
         },
         from: (pagination.page - 1) * pagination.perPage,
-        size: pagination.perPage * 2, // twice as much as we return, in case they are all duplicate temp/non-temp summary
+        size: pagination.perPage * 2, // twice as much as we return, in case they are all duplicate temp/non-temp summary,
+        aggs: {
+          groupByTags: {
+            terms: {
+              field: 'slo.tags',
+            },
+          },
+          // groupByStatus: {
+          //   terms: {
+          //     field: 'status',
+          //   },
+          // },
+        },
       });
-
+      const aggs = summarySearch.aggregations;
+      console.log(aggs, '!!aggs');
       const total = (summarySearch.hits.total as SearchTotalHits).value ?? 0;
       if (total === 0) {
-        return { total: 0, perPage: pagination.perPage, page: pagination.page, results: [] };
+        return {
+          total: 0,
+          perPage: pagination.perPage,
+          page: pagination.page,
+          results: [],
+          aggs: {},
+        };
       }
 
       const [tempSummaryDocuments, summaryDocuments] = _.partition(
@@ -113,7 +136,7 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
         .slice(0, pagination.perPage);
 
       const finalTotal = total - (tempSummaryDocuments.length - tempSummaryDocumentsDeduped.length);
-      return {
+      const returnMe = {
         total: finalTotal,
         perPage: pagination.perPage,
         page: pagination.page,
@@ -131,10 +154,19 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
             status: doc._source!.status,
           },
         })),
+        aggs: summarySearch.aggregations,
       };
+      console.log(returnMe, '!!returnMe');
+      return returnMe;
     } catch (err) {
       this.logger.error(new Error('Summary search query error', { cause: err }));
-      return { total: 0, perPage: pagination.perPage, page: pagination.page, results: [] };
+      return {
+        total: 0,
+        perPage: pagination.perPage,
+        page: pagination.page,
+        results: [],
+        aggs: {},
+      };
     }
   }
 }

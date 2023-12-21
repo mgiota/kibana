@@ -172,6 +172,10 @@ const findSLOResponseSchema = t.type({
   perPage: t.number,
   total: t.number,
   results: t.array(sloWithSummaryResponseSchema),
+  // aggs: t.type({ groupByTags: t.type({ terms: t.type({ field: t.string }) }) }),
+  aggs: t.type({
+    groupByTags: t.type({ buckets: t.array(t.type({ key: t.string, doc_count: t.number })) }),
+  }),
 });
 
 const deleteSLOInstancesParamsSchema = t.type({
@@ -204,6 +208,7 @@ const findSloDefinitionsResponseSchema = t.type({
   perPage: t.number,
   total: t.number,
   results: t.array(sloResponseSchema),
+  aggs: t.type({ groupByTags: t.type({ terms: t.type({ field: t.string }) }) }),
 });
 
 const getSLOBurnRatesResponseSchema = t.type({

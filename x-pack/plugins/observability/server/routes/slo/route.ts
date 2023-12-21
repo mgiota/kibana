@@ -45,6 +45,8 @@ import { DefaultHistoricalSummaryClient } from '../../services/slo/historical_su
 import { ManageSLO } from '../../services/slo/manage_slo';
 import { ResetSLO } from '../../services/slo/reset_slo';
 import { DefaultSummarySearchClient } from '../../services/slo/summary_search_client';
+import { SummarySearchClientV2 } from '../../services/slo/summary_search_client_v2';
+
 import { DefaultSummaryTransformGenerator } from '../../services/slo/summary_transform_generator/summary_transform_generator';
 import {
   ApmTransactionDurationTransformGenerator,
@@ -328,6 +330,31 @@ const findSLORoute = createObservabilityServerRoute({
     const esClient = (await context.core).elasticsearch.client.asCurrentUser;
     const repository = new KibanaSavedObjectsSLORepository(soClient);
     const summarySearchClient = new DefaultSummarySearchClient(esClient, logger, spaceId);
+    const findSLO = new FindSLO(repository, summarySearchClient);
+
+    const response = await findSLO.execute(params?.query ?? {});
+
+    return response;
+  },
+});
+
+const findSLORouteV2 = createObservabilityServerRoute({
+  endpoint: 'GET /api/observability/slos 2023-10-31',
+  options: {
+    tags: ['access:slo_read'],
+    access: 'public',
+  },
+  params: findSLOParamsSchema,
+  handler: async ({ context, request, params, logger, dependencies }) => {
+    await assertPlatinumLicense(context);
+
+    const spaceId =
+      (await dependencies.spaces?.spacesService?.getActiveSpace(request))?.id ?? 'default';
+
+    const soClient = (await context.core).savedObjects.client;
+    const esClient = (await context.core).elasticsearch.client.asCurrentUser;
+    const repository = new KibanaSavedObjectsSLORepository(soClient);
+    const summarySearchClient = new SummarySearchClientV2(esClient, logger, spaceId);
     const findSLO = new FindSLO(repository, summarySearchClient);
 
     const response = await findSLO.execute(params?.query ?? {});

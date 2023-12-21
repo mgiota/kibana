@@ -67,10 +67,14 @@ export function useFetchSloList({
       });
 
       console.log(response, '!!useFetchSloList response');
-      console.log(groupBy, '!!groupBy useFetchSloList');
       if (groupBy !== 'ungrouped') {
+        // read from aggregations
+        const tags = response.aggs.groupByTags.buckets.reduce((acc, bucket) => {
+          return { ...acc, [bucket.key]: bucket.doc_count ?? 0 };
+        }, {} as Record<string, number>);
+        console.log(tags, '!!tagss');
+        return tags;
         // can I get the tags from saved object, so that I avoid looping through all slos to retrieve the tags
-        const tags = [];
         const groupedResponse = {
           group_by_sli_indicator: {
             'sli.kql.custom': [],
@@ -103,8 +107,8 @@ export function useFetchSloList({
           });
         });
 
-        console.log(groupedResponse, '!!groupedResponse');
-        return groupedResponse;
+        // console.log(groupedResponse, '!!groupedResponse');
+        // return groupedResponse;
       } else {
         return response;
       }
