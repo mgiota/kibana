@@ -148,6 +148,7 @@ export function SloList({ autoRefresh }: Props) {
             groupBy={groupBy}
             sloView={view}
             isCompact={isCompact}
+            kqlQuery={query}
           />
         </>
       )}

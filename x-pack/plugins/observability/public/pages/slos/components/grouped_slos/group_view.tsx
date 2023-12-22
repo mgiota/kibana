@@ -13,7 +13,7 @@ import { GroupListView } from './group_list_view';
 // useFetchSloList to get all slos for the specified tag, pass a query -> in progress
 // add pagination in this file, probably not, I need pagination within accordion
 // this file is similar to slo_list
-export function GroupView({ groups, loading, groupBy, sloView, isCompact }) {
+export function GroupView({ groups, loading, groupBy, sloView, isCompact, kqlQuery }) {
   console.log(groups, '!!groups lala');
 
   if (!loading && Object.keys(groups).length === 0) {
@@ -28,7 +28,14 @@ export function GroupView({ groups, loading, groupBy, sloView, isCompact }) {
       </h1>
       {groups &&
         Object.keys(groups).map((group, index) => {
-          return <GroupListView group={group} groupBy={groupBy} />;
+          return (
+            <GroupListView
+              group={group}
+              groupBy={groupBy}
+              kqlQuery={kqlQuery}
+              isCompact={isCompact}
+            />
+          );
         })}
     </>
   );
