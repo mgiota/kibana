@@ -20,7 +20,9 @@ export function GroupListView({ isCompact, group, groupBy }) {
   const query = `"slo.tags": ${group}`;
   const { state, store: storeState } = useUrlSearchState();
 
-  const [page, setPage] = useState(state.page);
+  // const [page, setPage] = useState(state.page);
+  const [page, setPage] = useState(0);
+
   // TODO get sortBy and sortDirection from parent
   const {
     isLoading,
@@ -38,7 +40,7 @@ export function GroupListView({ isCompact, group, groupBy }) {
 
   const handlePageClick = (pageNumber: number) => {
     setPage(pageNumber);
-    storeState({ page: pageNumber });
+    // storeState({ page: pageNumber });
   };
 
   return (
