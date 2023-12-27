@@ -92,6 +92,7 @@ const findSLOParamsSchema = t.partial({
     sortBy: sortBySchema,
     sortDirection: sortDirectionSchema,
   }),
+  onlyAggs: t.boolean,
 });
 
 const sloResponseSchema = t.intersection([

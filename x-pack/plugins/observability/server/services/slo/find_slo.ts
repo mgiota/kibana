@@ -25,7 +25,8 @@ export class FindSLO {
     const sloSummaryList = await this.summarySearchClient.search(
       params.kqlQuery ?? '',
       toSort(params),
-      toPagination(params)
+      toPagination(params),
+      params.onlyAggs ?? false
     );
 
     const sloList = await this.repository.findAllByIds(sloSummaryList.results.map((slo) => slo.id));

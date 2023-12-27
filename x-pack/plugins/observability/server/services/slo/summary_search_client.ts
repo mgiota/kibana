@@ -52,7 +52,7 @@ interface Aggregation {
 }
 
 export interface SummarySearchClient {
-  search(kqlQuery: string, sort: Sort, pagination: Pagination);
+  search(kqlQuery: string, sort: Sort, pagination: Pagination, onlyAggs?: boolean);
 }
 
 export class DefaultSummarySearchClient implements SummarySearchClient {
@@ -62,7 +62,7 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
     private spaceId: string
   ) {}
 
-  async search(kqlQuery: string, sort: Sort, pagination: Pagination) {
+  async search(kqlQuery: string, sort: Sort, pagination: Pagination, onlyAggs = false) {
     try {
       const summarySearch = await this.esClient.search<EsSummaryDocument>({
         index: SLO_SUMMARY_DESTINATION_INDEX_PATTERN,
@@ -82,7 +82,7 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
           },
         },
         from: (pagination.page - 1) * pagination.perPage,
-        size: pagination.perPage * 2, // twice as much as we return, in case they are all duplicate temp/non-temp summary,
+        size: onlyAggs ? 0 : pagination.perPage * 2, // twice as much as we return, in case they are all duplicate temp/non-temp summary,
         aggs: {
           groupByTags: {
             terms: {
