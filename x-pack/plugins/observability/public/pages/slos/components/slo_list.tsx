@@ -14,8 +14,6 @@ import { SlosView } from './slos_view';
 import { SloListSearchBar, SortDirection, SortField } from './slo_list_search_bar';
 import { SLOView, ToggleSLOView } from './toggle_slo_view';
 import { GroupByField, SloGroupBy } from './slo_list_group_by';
-import { GroupedSlos } from './grouped_slos2/slo_list';
-import { GroupedSlos2 } from './grouped_slos2/slo_list2';
 import { GroupView } from './grouped_slos/group_view';
 export interface Props {
   autoRefresh: boolean;
@@ -129,19 +127,6 @@ export function SloList({ autoRefresh }: Props) {
 
       {groupBy !== 'ungrouped' && (
         <>
-          {/* <GroupedSlos
-            sloList={sloList}
-            loading={isLoading || isRefetching}
-            groupBy={groupBy}
-            perPage={perPage}
-            kqlQuery={query}
-            sortBy={sort}
-            sortDirection={direction}
-            page={page + 1}
-            shouldRefetch={autoRefresh}
-          /> */}
-
-          {/* <GroupedSlos2 sloList={sloList} loading={isLoading || isRefetching} groupBy={groupBy} /> */}
           <GroupView
             groups={sloList}
             loading={isLoading || isRefetching}

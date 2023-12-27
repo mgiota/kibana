@@ -66,13 +66,11 @@ export function useFetchSloList({
         signal,
       });
 
-      console.log(response, '!!useFetchSloList response');
       if (groupBy !== 'ungrouped') {
         // read from aggregations
         const tags = response.aggs.groupByTags.buckets.reduce((acc, bucket) => {
           return { ...acc, [bucket.key]: bucket.doc_count ?? 0 };
         }, {} as Record<string, number>);
-        console.log(tags, '!!tagss');
         return tags;
         // can I get the tags from saved object, so that I avoid looping through all slos to retrieve the tags
         const groupedResponse = {

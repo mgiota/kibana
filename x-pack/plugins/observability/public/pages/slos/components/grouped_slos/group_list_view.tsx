@@ -16,9 +16,7 @@ import { useUrlSearchState } from '../../hooks/use_url_search_state';
 // update store to save both
 
 export function GroupListView({ isCompact, group, groupBy, kqlQuery }) {
-  console.log(groupBy, group, '!!groupBy');
   const query = kqlQuery ? `"slo.tags": ${group} and ${kqlQuery}` : `"slo.tags": ${group}`;
-  console.log(query, '!!query');
   const { state, store: storeState } = useUrlSearchState();
 
   // const [page, setPage] = useState(state.page);
@@ -35,9 +33,7 @@ export function GroupListView({ isCompact, group, groupBy, kqlQuery }) {
     perPage: 2,
     page: page + 1,
   });
-  console.log(sloList, '!!group list');
   const { results = [], total = 0 } = sloList ?? {};
-  console.log(total, '!!total');
 
   const handlePageClick = (pageNumber: number) => {
     setPage(pageNumber);

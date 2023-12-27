@@ -5,7 +5,7 @@
  * 2.0.
  */
 import { i18n } from '@kbn/i18n';
-import React, { useState } from 'react';
+import React from 'react';
 import { SloListEmpty } from '../slo_list_empty';
 import { GroupListView } from './group_list_view';
 import { useFetchSloGroups } from '../../../../hooks/slo/use_fetch_slo_groups';
@@ -13,12 +13,11 @@ import { useFetchSloGroups } from '../../../../hooks/slo/use_fetch_slo_groups';
 // add pagination in this file, probably not, I need pagination within accordion
 // this file is similar to slo_list
 export function GroupView({ groups, loading, groupBy, sloView, isCompact, kqlQuery }) {
-  console.log(groups, '!!groups lala');
-  const aggs = useFetchSloGroups();
-  console.log(aggs, '!!aggsssss');
-  if (!loading && Object.keys(groups).length === 0) {
-    return <SloListEmpty />;
-  }
+  const { data, isLoading } = useFetchSloGroups({ kqlQuery, groupBy });
+  console.log(data, '!!GroupView aggregations');
+  // if (isLoading) {
+  //   return <SloListEmpty />;
+  // }
   return (
     <>
       <h1>
@@ -26,8 +25,8 @@ export function GroupView({ groups, loading, groupBy, sloView, isCompact, kqlQue
           defaultMessage: 'Grouped SLOs',
         })}
       </h1>
-      {groups &&
-        Object.keys(groups).map((group, index) => {
+      {data &&
+        Object.keys(data).map((group, index) => {
           return (
             <GroupListView
               group={group}

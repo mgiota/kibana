@@ -89,15 +89,13 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
               field: 'slo.tags',
             },
           },
-          // groupByStatus: {
-          //   terms: {
-          //     field: 'status',
-          //   },
-          // },
+          groupByStatus: {
+            terms: {
+              field: 'status',
+            },
+          },
         },
       });
-      const aggs = summarySearch.aggregations;
-      console.log(aggs, '!!aggs');
       const total = (summarySearch.hits.total as SearchTotalHits).value ?? 0;
       if (total === 0) {
         return {
@@ -136,7 +134,7 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
         .slice(0, pagination.perPage);
 
       const finalTotal = total - (tempSummaryDocuments.length - tempSummaryDocumentsDeduped.length);
-      const returnMe = {
+      return {
         total: finalTotal,
         perPage: pagination.perPage,
         page: pagination.page,
@@ -156,8 +154,6 @@ export class DefaultSummarySearchClient implements SummarySearchClient {
         })),
         aggs: summarySearch.aggregations,
       };
-      console.log(returnMe, '!!returnMe');
-      return returnMe;
     } catch (err) {
       this.logger.error(new Error('Summary search query error', { cause: err }));
       return {

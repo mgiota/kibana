@@ -6,18 +6,13 @@
  */
 import { isRunningResponse } from '@kbn/data-plugin/common';
 import { useQuery } from '@tanstack/react-query';
-import { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import { useKibana } from '../../utils/kibana_react';
 import { SLO_SUMMARY_DESTINATION_INDEX_PATTERN } from '../../../common/slo/constants';
+import { sloKeys } from './query_key_factory';
 
-export async function useFetchSloGroups() {
-  // const { http } = useKibana().services;
-  const {
-    data: { search: searchService },
-    http,
-  } = useKibana().services;
-  try {
-    const aggsPromise = new Promise((resolve, reject) => {
+const createFetchAggregations = async function (searchService) {
+  const search = async function () {
+    return new Promise((resolve, reject) => {
       searchService
         .search({
           params: {
@@ -46,10 +41,34 @@ export async function useFetchSloGroups() {
           },
         });
     });
-    const x = await aggsPromise;
-    console.log(x, '!!aggs');
-    return x;
-  } catch (e) {
-    console.log(e);
-  }
+  };
+  const { aggregations } = await search();
+  // const tags = aggregations.groupByTags.buckets.reduce((acc, bucket) => {
+  //   return { ...acc, [bucket.key]: bucket.doc_count ?? 0 };
+  // }, {} as Record<string, number>);
+  // return tags;
+  return aggregations;
+};
+
+export function useFetchSloGroups({ kqlQuery, groupBy }) {
+  const {
+    data: { search: searchService },
+  } = useKibana().services;
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['slos'],
+    queryFn: async () => {
+      const response = await createFetchAggregations(searchService);
+      const tags = response.groupByTags.buckets.reduce((acc, bucket) => {
+        return { ...acc, [bucket.key]: bucket.doc_count ?? 0 };
+      }, {} as Record<string, number>);
+      return tags;
+    },
+  });
+
+  return {
+    data: data || {},
+    isLoading,
+    isFetching,
+  };
 }
