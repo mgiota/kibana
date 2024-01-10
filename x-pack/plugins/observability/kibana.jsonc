@@ -40,7 +40,10 @@
       "dashboard",
       "expressions",
       "logExplorer",
-      "licensing"
+      "licensing",
+      "savedObjects",
+      "savedObjectsFinder",
+      "savedSearch"
     ],
     "optionalPlugins": [
       "discover",
@@ -49,7 +52,8 @@
       "cloud",
       "spaces",
       "serverless",
-      "guidedOnboarding"
+      "guidedOnboarding",
+      "savedObjectsTaggingOss"
     ],
     "requiredBundles": [
       "data",

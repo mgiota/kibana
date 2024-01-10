@@ -69,6 +69,8 @@ import type { UiActionsStart, UiActionsSetup } from '@kbn/ui-actions-plugin/publ
 import { firstValueFrom } from 'rxjs';
 
 import type { PresentationUtilPluginStart } from '@kbn/presentation-util-plugin/public';
+import type { SavedObjectsTaggingApi } from '@kbn/saved-objects-tagging-oss-plugin/public';
+import type { ContentClient } from '@kbn/content-management-plugin/public';
 import { observabilityAppId, observabilityFeatureId } from '../common';
 import {
   ALERTS_PATH,
@@ -159,6 +161,8 @@ export interface ObservabilityPublicPluginsStart {
   uiSettings: IUiSettingsClient;
   uiActions: UiActionsStart;
   presentationUtil?: PresentationUtilPluginStart;
+  savedObjectsTagging?: SavedObjectsTaggingApi;
+  contentClient: ContentClient;
 }
 export type ObservabilityPublicStart = ReturnType<Plugin['start']>;
 

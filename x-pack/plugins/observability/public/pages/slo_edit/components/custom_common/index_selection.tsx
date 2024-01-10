@@ -21,15 +21,34 @@ export function IndexSelection() {
   const { dataViews: dataViewsService } = useKibana().services;
 
   const { isLoading: isDataViewsLoading, data: dataViews = [] } = useFetchDataViews();
-
+  console.log(dataViews, '!!dataViews');
   const { dataViewEditor } = useKibana<ObservabilityPublicPluginsStart>().services;
 
   const [adHocDataViews, setAdHocDataViews] = useState<DataView[]>([]);
 
   const currentIndexPattern = watch('indicator.params.index');
+  const goodEvents = watch('indicator.params.good');
+  const getDataViewIdByIndexPattern = (indexPattern: string) => {
+    return (
+      dataViews.find((dataView) => dataView.title === indexPattern) ||
+      adHocDataViews.find((dataView) => dataView.getIndexPattern() === indexPattern)
+    );
+  };
+  const selectedDataView = getDataViewIdByIndexPattern(currentIndexPattern);
+  const selectedDataViewId = selectedDataView?.id;
+  console.log(selectedDataView, '!!dataViewId');
+  // if (selectedDataViewId) {
+  //   dataViewsService.get(selectedDataViewId).then((dataView) => {
+  //     console.log(dataView, '!!aaa');
+  //     if (dataView.timeFieldName) {
+  //       setValue('indicator.params.timestampField', dataView.timeFieldName);
+  //     }
+  //   });
+  // }
 
   useEffect(() => {
     if (!isDataViewsLoading) {
+      console.log(adHocDataViews, '!!adHocDataViews');
       const missingAdHocDataView =
         dataViews.find((dataView) => dataView.title === currentIndexPattern) ||
         adHocDataViews.find((dataView) => dataView.getIndexPattern() === currentIndexPattern);
@@ -57,13 +76,6 @@ export function IndexSelection() {
     return (
       dataViews.find((dataView) => dataView.id === id)?.title ||
       adHocDataViews.find((dataView) => dataView.id === id)?.getIndexPattern()
-    );
-  };
-
-  const getDataViewIdByIndexPattern = (indexPattern: string) => {
-    return (
-      dataViews.find((dataView) => dataView.title === indexPattern) ||
-      adHocDataViews.find((dataView) => dataView.getIndexPattern() === indexPattern)
     );
   };
 
