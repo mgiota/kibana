@@ -61,19 +61,7 @@ function createSloEmbeddableDepsMock(): SloEmbeddableDeps {
     theme: themeServiceMock.createStartContract(),
     notifications: notificationServiceMock.createStartContract(),
     http: httpServiceMock.createStartContract(),
-    observability: {
-      config: {
-        unsafe: {
-          alertDetails: {
-            observability: { enabled: true },
-            metrics: { enabled: false },
-            uptime: { enabled: false },
-          },
-        },
-      },
-      useRulesLink: () => ({ href: 'newRuleLink' }),
-      observabilityRuleTypeRegistry: createObservabilityRuleTypeRegistryMock(),
-    },
+    observabilityRuleTypeRegistry: createObservabilityRuleTypeRegistryMock(),
   };
 }
 

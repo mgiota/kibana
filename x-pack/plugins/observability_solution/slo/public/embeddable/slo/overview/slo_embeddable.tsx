@@ -45,7 +45,7 @@ export interface SloEmbeddableDeps {
   theme: CoreStart['theme'];
   application: ApplicationStart;
   notifications: NotificationsStart;
-  observability: ObservabilityPublicStart;
+  observabilityRuleTypeRegistry: ObservabilityPublicStart['observabilityRuleTypeRegistry'];
 }
 
 export class SLOEmbeddable extends AbstractEmbeddable<SloEmbeddableInput, EmbeddableOutput> {
@@ -85,8 +85,8 @@ export class SLOEmbeddable extends AbstractEmbeddable<SloEmbeddableInput, Embedd
     const { sloId, sloInstanceId, showAllGroupByInstances, overviewMode, groupFilters } =
       this.getInput();
     const queryClient = new QueryClient();
-    const { observabilityRuleTypeRegistry } = this.deps.observability;
-    // const observabilityRuleTypeRegistry = this.deps.observabilityRuleTypeRegistry;
+    // const { observabilityRuleTypeRegistry } = this.deps.observability;
+    const observabilityRuleTypeRegistry = this.deps.observabilityRuleTypeRegistry;
     const I18nContext = this.deps.i18n.Context;
 
     const renderOverview = () => {
