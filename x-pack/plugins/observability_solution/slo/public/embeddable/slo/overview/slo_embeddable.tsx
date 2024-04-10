@@ -104,10 +104,19 @@ export class SLOEmbeddable extends AbstractEmbeddable<SloEmbeddableInput, Embedd
     const renderOverview = () => {
       if (overviewMode === 'groups') {
         const groupBy = groupFilters?.groupBy ?? 'status';
+        const groups = groupFilters?.groups ?? [];
+        let kqlQuery = '';
+        groups.map((group, index) => {
+          const shouldAddOr = index < groups.length - 1;
+          kqlQuery += `(${groupBy}:"${group}")`;
+          if (shouldAddOr) {
+            kqlQuery += ' or ';
+          }
+        });
         return (
           <Wrapper>
             <EuiFlexItem grow={false}>
-              <GroupView sloView="cardView" groupBy={groupBy} />
+              <GroupView sloView="cardView" groupBy={groupBy} kqlQuery={kqlQuery} />
             </EuiFlexItem>
           </Wrapper>
         );

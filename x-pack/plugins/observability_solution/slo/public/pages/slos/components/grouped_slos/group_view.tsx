@@ -16,7 +16,7 @@ import { GroupListView } from './group_list_view';
 
 interface Props {
   groupBy: string;
-  kqlQuery?: string;
+  kqlQuery: string;
   sloView: SLOView;
   sort?: string;
   direction?: SortDirection;

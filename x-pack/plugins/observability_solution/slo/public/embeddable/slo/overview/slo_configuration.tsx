@@ -131,8 +131,8 @@ function SingleSloConfiguration({ overviewMode, onCreate, onCancel }: SingleConf
 function GroupSloConfiguration({ overviewMode, onCreate, onCancel }: GroupConfigurationProps) {
   const [selectedGroupFilters, setSelectedGroupFilters] = useState<GroupFilters>({
     groupBy: 'status',
+    groups: [],
   });
-  const [hasError, setHasError] = useState(false);
 
   const onConfirmClick = () =>
     onCreate({
@@ -149,7 +149,6 @@ function GroupSloConfiguration({ overviewMode, onCreate, onCancel }: GroupConfig
               <EuiFlexItem>
                 <SloGroupFilters
                   onSelected={(prop, value) => {
-                    setHasError(value === undefined);
                     setSelectedGroupFilters((prevState) => ({ ...prevState, [prop]: value }));
                   }}
                 />
@@ -166,12 +165,7 @@ function GroupSloConfiguration({ overviewMode, onCreate, onCancel }: GroupConfig
           />
         </EuiButtonEmpty>
 
-        <EuiButton
-          data-test-subj="sloConfirmButton"
-          isDisabled={selectedGroupFilters.groups?.length === 0 || hasError}
-          onClick={onConfirmClick}
-          fill
-        >
+        <EuiButton data-test-subj="sloConfirmButton" onClick={onConfirmClick} fill>
           <FormattedMessage
             id="xpack.slo.embeddableSlo.config.confirmButtonLabel"
             defaultMessage="Confirm configurations"
