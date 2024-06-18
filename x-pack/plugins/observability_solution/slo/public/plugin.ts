@@ -112,6 +112,7 @@ export class SloPlugin
             const { getOverviewEmbeddableFactory } = await import(
               './embeddable/slo/overview/slo_embeddable_factory'
             );
+            return getOverviewEmbeddableFactory(coreSetup.getStartServices);
             return getOverviewEmbeddableFactory(deps);
           }
         );
