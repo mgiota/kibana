@@ -9,6 +9,7 @@ import { FtrProviderContext } from '../../../ftr_provider_context';
 
 export default function ({ loadTestFile }: FtrProviderContext) {
   describe('Slo - Burn rate rule', function () {
+    this.tags(['myIncludeServerlessTag', 'myIncludeEssTag']);
     loadTestFile(require.resolve('./burn_rate_rule'));
   });
 }

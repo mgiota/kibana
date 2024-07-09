@@ -21,7 +21,7 @@ export default function ({ getService }: FtrProviderContext) {
   const isServerless = config.get('serverless');
   const expectedConsumer = isServerless ? 'observability' : 'slo';
 
-  describe('@serverless @ess Burn rate rule', () => {
+  describe('Burn rate rule', () => {
     const RULE_TYPE_ID = 'slo.rules.burnRate';
     const DATA_VIEW = 'kbn-data-forge-fake_hosts.fake_hosts-*';
     const RULE_ALERT_INDEX = '.alerts-observability.slo.alerts-default';

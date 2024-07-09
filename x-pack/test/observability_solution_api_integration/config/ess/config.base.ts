@@ -28,8 +28,9 @@ export function createTestConfig(options: CreateTestConfigOptions) {
       junit: {
         reportName: 'X-Pack Οbservability Solution API Integration Tests',
       },
-      mochaOpts: {
-        grep: '/^(?!.*@skipInEss).*@ess.*/',
+      suiteTags: {
+        include: ['myIncludeEssTag'],
+        exclude: ['myExcludeEssTag'],
       },
       kbnTestServer: {
         ...xPackApiIntegrationTestsConfig.get('kbnTestServer'),

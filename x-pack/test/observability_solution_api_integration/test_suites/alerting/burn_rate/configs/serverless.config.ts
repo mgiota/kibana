@@ -10,6 +10,6 @@ import { createTestConfig } from '../../../../config/serverless/config.base';
 export default createTestConfig({
   testFiles: [require.resolve('..')],
   junit: {
-    reportName: 'SLO - Integration Tests - Serverless Env',
+    reportName: 'SLO - Burn rate Integration Tests - Serverless Env',
   },
 });

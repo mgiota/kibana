@@ -30,9 +30,9 @@ export function createTestConfig(options: CreateTestConfigOptions) {
       },
       testFiles: options.testFiles,
       junit: options.junit,
-      mochaOpts: {
-        ...svlSharedConfig.get('mochaOpts'),
-        grep: '/^(?!.*@skipInServerless).*@serverless.*/',
+      suiteTags: {
+        include: ['myIncludeServerlessTag'],
+        exclude: ['myExcludeServerlessTag'],
       },
     };
   };
