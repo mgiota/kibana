@@ -11,6 +11,7 @@ import {
 } from '@kbn/slo-schema';
 import * as t from 'io-ts';
 import { FtrProviderContext } from '../../functional/ftr_provider_context';
+import { RoleCredentials } from '../../../test_serverless/shared/services';
 
 type DurationUnit = 'm' | 'h' | 'd' | 'w' | 'M';
 
@@ -71,54 +72,114 @@ export function SloApiProvider({ getService }: FtrProviderContext) {
   const es = getService('es');
   const supertest = getService('supertest');
   const retry = getService('retry');
+  const config = getService('config');
+  const isServerless = config.get('serverless');
+  let svlUserManager;
+  if (isServerless) {
+    svlUserManager = getService('svlUserManager');
+  }
+
   const requestTimeout = 30 * 1000;
   const retryTimeout = 180 * 1000;
 
   return {
     async create(slo: SloParams) {
-      const { body } = await supertest
-        .post(`/api/observability/slos`)
-        .set('kbn-xsrf', 'foo')
-        .set('x-elastic-internal-origin', 'foo')
-        .send(slo);
+      let roleAuthc: RoleCredentials;
+      if (isServerless) {
+        roleAuthc = await svlUserManager.createApiKeyForRole('admin');
+        const { body } = await supertest
+          .post(`/api/observability/slos`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo')
+          .set(roleAuthc.apiKeyHeader)
+          .send(slo);
 
-      return body;
+        return body;
+      } else {
+        const { body } = await supertest
+          .post(`/api/observability/slos`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo')
+          .send(slo);
+
+        return body;
+      }
     },
 
     async delete(sloId: string) {
-      const response = await supertest
-        .delete(`/api/observability/slos/${sloId}`)
-        .set('kbn-xsrf', 'foo')
-        .set('x-elastic-internal-origin', 'foo');
-      return response;
+      let roleAuthc: RoleCredentials;
+      if (isServerless) {
+        roleAuthc = await svlUserManager.createApiKeyForRole('admin');
+        const response = await supertest
+          .delete(`/api/observability/slos/${sloId}`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo')
+          .set(roleAuthc.apiKeyHeader);
+        return response;
+      } else {
+        const response = await supertest
+          .delete(`/api/observability/slos/${sloId}`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo');
+        return response;
+      }
     },
 
     async fetchHistoricalSummary(
       params: FetchHistoricalSummaryParams
     ): Promise<FetchHistoricalSummaryResponse> {
-      const { body } = await supertest
-        .post(`/internal/observability/slos/_historical_summary`)
-        .set('kbn-xsrf', 'foo')
-        .set('x-elastic-internal-origin', 'foo')
-        .send(params);
+      let roleAuthc: RoleCredentials;
+      if (isServerless) {
+        roleAuthc = await svlUserManager.createApiKeyForRole('admin');
+        const { body } = await supertest
+          .post(`/internal/observability/slos/_historical_summary`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo')
+          .set(roleAuthc.apiKeyHeader)
+          .send(params);
 
-      return body;
+        return body;
+      } else {
+        const { body } = await supertest
+          .post(`/internal/observability/slos/_historical_summary`)
+          .set('kbn-xsrf', 'foo')
+          .set('x-elastic-internal-origin', 'foo')
+          .send(params);
+
+        return body;
+      }
     },
 
     async waitForSloToBeDeleted(sloId: string) {
       if (!sloId) {
         throw new Error(`sloId is undefined`);
       }
+      let roleAuthc: RoleCredentials;
+
       return await retry.tryForTime(retryTimeout, async () => {
-        const response = await supertest
-          .delete(`/api/observability/slos/${sloId}`)
-          .set('kbn-xsrf', 'foo')
-          .set('x-elastic-internal-origin', 'foo')
-          .timeout(requestTimeout);
-        if (!response.ok) {
-          throw new Error(`slodId [${sloId}] was not deleted`);
+        if (isServerless) {
+          roleAuthc = await svlUserManager.createApiKeyForRole('admin');
+          const response = await supertest
+            .delete(`/api/observability/slos/${sloId}`)
+            .set('kbn-xsrf', 'foo')
+            .set('x-elastic-internal-origin', 'foo')
+            .set(roleAuthc.apiKeyHeader)
+            .timeout(requestTimeout);
+          if (!response.ok) {
+            throw new Error(`slodId [${sloId}] was not deleted`);
+          }
+          return response;
+        } else {
+          const response = await supertest
+            .delete(`/api/observability/slos/${sloId}`)
+            .set('kbn-xsrf', 'foo')
+            .set('x-elastic-internal-origin', 'foo')
+            .timeout(requestTimeout);
+          if (!response.ok) {
+            throw new Error(`slodId [${sloId}] was not deleted`);
+          }
+          return response;
         }
-        return response;
       });
     },
 
@@ -126,16 +187,32 @@ export function SloApiProvider({ getService }: FtrProviderContext) {
       if (!sloId) {
         throw new Error(`'sloId is undefined`);
       }
+      let roleAuthc: RoleCredentials;
+
       return await retry.tryForTime(retryTimeout, async () => {
-        const response = await supertest
-          .get(`/api/observability/slos/${sloId}`)
-          .set('kbn-xsrf', 'foo')
-          .set('x-elastic-internal-origin', 'foo')
-          .timeout(requestTimeout);
-        if (response.body.id === undefined) {
-          throw new Error(`No slo with id ${sloId} found`);
+        if (isServerless) {
+          roleAuthc = await svlUserManager.createApiKeyForRole('admin');
+          const response = await supertest
+            .get(`/api/observability/slos/${sloId}`)
+            .set('kbn-xsrf', 'foo')
+            .set('x-elastic-internal-origin', 'foo')
+            .set(roleAuthc.apiKeyHeader)
+            .timeout(requestTimeout);
+          if (response.body.id === undefined) {
+            throw new Error(`No slo with id ${sloId} found`);
+          }
+          return response.body;
+        } else {
+          const response = await supertest
+            .get(`/api/observability/slos/${sloId}`)
+            .set('kbn-xsrf', 'foo')
+            .set('x-elastic-internal-origin', 'foo')
+            .timeout(requestTimeout);
+          if (response.body.id === undefined) {
+            throw new Error(`No slo with id ${sloId} found`);
+          }
+          return response.body;
         }
-        return response.body;
       });
     },
 
