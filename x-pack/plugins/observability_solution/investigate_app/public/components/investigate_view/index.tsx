@@ -31,11 +31,6 @@ const scrollContainerClassName = css`
   min-width: 1px;
 `;
 
-const addWidgetContainerClassName = css`
-  width: 100%;
-  padding-bottom: 24px;
-`;
-
 const gridContainerClassName = css`
   position: relative;
 `;
@@ -57,25 +52,10 @@ function InvestigateViewWithUser({ user }: { user: AuthenticatedUser }) {
 
   const theme = useTheme();
 
-  const [displayedKuery, setDisplayedKuery] = useState('');
+  const [setDisplayedKuery] = useState('');
 
   const backgroundColorOpaque = rgba(theme.colors.emptyShade, 1);
   const backgroundColorTransparent = rgba(theme.colors.emptyShade, 0);
-
-  const searchBarContainerClassName = css`
-    position: sticky;
-    top: -8px;
-    padding: 8px 0px;
-    margin: -8px 0px;
-    background: linear-gradient(
-      to bottom,
-      ${backgroundColorTransparent} 0%,
-      ${backgroundColorOpaque} 8px,
-      ${backgroundColorOpaque} calc(100% - 8px),
-      ${backgroundColorTransparent} 100%
-    );
-    z-index: 100;
-  `;
 
   const widgetDefinitions = useMemo(() => investigate.getWidgetDefinitions(), [investigate]);
 
@@ -89,20 +69,10 @@ function InvestigateViewWithUser({ user }: { user: AuthenticatedUser }) {
     copyItem,
     deleteItem,
     investigation,
-    isAtEarliestRevision,
-    isAtLatestRevision,
     lockItem,
-    setGlobalParameters,
     setItemParameters,
     unlockItem,
     revision,
-    updateItem,
-    gotoNextRevision,
-    gotoPreviousRevision,
-    startNewInvestigation,
-    loadInvestigation,
-    investigations,
-    deleteInvestigation,
   } = investigate.useInvestigation({
     user,
     from: range.start.toISOString(),
@@ -128,10 +98,6 @@ function InvestigateViewWithUser({ user }: { user: AuthenticatedUser }) {
       return prevEditingItem;
     });
   }, [revision]);
-
-  useEffect(() => {
-    setDisplayedKuery(revision?.parameters.query.query ?? '');
-  }, [revision?.parameters.query.query]);
 
   useEffect(() => {
     if (
@@ -182,9 +148,7 @@ function InvestigateViewWithUser({ user }: { user: AuthenticatedUser }) {
     });
   }, [revision, widgetDefinitions, uiSettings]);
 
-  const [scrollableContainer, setScrollableContainer] = useState<HTMLElement | null>(null);
-
-  const [searchBarFocused, setSearchBarFocused] = useState(false);
+  const [searchBarFocused] = useState(false);
 
   if (!investigation || !revision || !gridItems) {
     return <EuiLoadingSpinner />;
