@@ -15,8 +15,13 @@ import type { ErrorResponseBase } from '@elastic/elasticsearch/lib/api/typesWith
 
 import type { SecondaryAuthorizationHeader } from '../../../../../common/types/models/transform_api_key';
 import { updateEsAssetReferences } from '../../packages/es_assets_reference';
+import { updateKibanaAssetReferences } from '../../packages/kibana_assets_reference';
 import type { Installation } from '../../../../../common';
-import { ElasticsearchAssetType, PACKAGES_SAVED_OBJECT_TYPE } from '../../../../../common';
+import {
+  ElasticsearchAssetType,
+  KibanaSavedObjectType,
+  PACKAGES_SAVED_OBJECT_TYPE,
+} from '../../../../../common';
 
 import { retryTransientEsErrors } from '../retry';
 
@@ -141,7 +146,7 @@ export async function handleTransformReauthorizeAndStart({
       const transform = t.transforms?.[0];
       return { ...transform._meta, transformId: transform?.id };
     })
-    .filter((t) => t?.run_as_kibana_system === false);
+    .filter((t) => t?.run_as_kibana_system === false || t?.run_as_kibana_system === undefined);
 
   const shouldInstallSequentially =
     uniqBy(transformsMetadata, 'order').length === transforms.length;
@@ -183,16 +188,29 @@ export async function handleTransformReauthorizeAndStart({
 
   const so = await savedObjectsClient.get<Installation>(PACKAGES_SAVED_OBJECT_TYPE, pkgName);
   const esReferences = so.attributes.installed_es ?? [];
-
+  const kibanaReferences = so.attributes.installed_kibana ?? [];
   const successfullyAuthorizedTransforms = authorizedTransforms.filter((t) => t.success);
   const authorizedTransformsRefs = successfullyAuthorizedTransforms.map((t) => ({
     type: ElasticsearchAssetType.transform,
     id: t.transformId,
     version: pkgVersion,
   }));
+
   await updateEsAssetReferences(savedObjectsClient, pkgName, esReferences, {
     assetsToRemove: authorizedTransformsRefs,
     assetsToAdd: authorizedTransformsRefs,
   });
+
+  const authorizedSloTransformsRefs = successfullyAuthorizedTransforms.map((t) => ({
+    type: KibanaSavedObjectType.slo,
+    id: 'nginx-9eb25600-a1f0-11e7-928f-5dbe6f6f5510',
+    version: pkgVersion,
+  }));
+
+  await updateKibanaAssetReferences(savedObjectsClient, pkgName, kibanaReferences, {
+    assetsToRemove: authorizedSloTransformsRefs,
+    assetsToAdd: authorizedSloTransformsRefs,
+  });
+
   return authorizedTransforms;
 }

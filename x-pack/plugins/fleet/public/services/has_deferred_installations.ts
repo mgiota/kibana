@@ -10,9 +10,23 @@ import type { PackageInfo, PackageListItem } from '../../common';
 export const getDeferredInstallationsCnt = (pkg?: PackageInfo | PackageListItem | null): number => {
   if (!pkg) return 0;
 
-  return pkg && 'installationInfo' in pkg && pkg.installationInfo
-    ? pkg.installationInfo.installed_es?.filter((d) => d.deferred).length
-    : 0;
+  const sloAssets =
+    pkg &&
+    'installationInfo' in pkg &&
+    pkg.installationInfo &&
+    pkg.installationInfo.installed_kibana?.filter(
+      (asset) => asset.type === 'slo' && asset.deferred
+    );
+
+  const sloAssetsNum = (sloAssets && sloAssets.length) || 0;
+
+  const deferredAssets =
+    pkg &&
+    'installationInfo' in pkg &&
+    pkg.installationInfo &&
+    pkg.installationInfo.installed_es?.filter((d) => d.deferred);
+  const deferredAssetsNum = (deferredAssets && deferredAssets.length) || 0;
+  return deferredAssetsNum + sloAssetsNum;
 };
 
 export const hasDeferredInstallations = (pkg?: PackageInfo | PackageListItem | null): boolean =>

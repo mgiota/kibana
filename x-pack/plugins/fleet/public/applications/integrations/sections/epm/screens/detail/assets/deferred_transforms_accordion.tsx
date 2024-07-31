@@ -37,12 +37,14 @@ import { AssetTitleMap } from '../../../constants';
 
 import type { PackageInfo } from '../../../../../types';
 import { ElasticsearchAssetType } from '../../../../../types';
+import type { KibanaAssetReference } from '../../../../../../../../common/types/models/epm';
 
 interface Props {
   packageInfo: PackageInfo;
   type: ElasticsearchAssetType.transform;
   deferredInstallations: EsAssetReference[];
   forceRefreshAssets?: () => void;
+  sloAssets: KibanaAssetReference[];
 }
 
 export const getDeferredAssetDescription = (
@@ -84,10 +86,18 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
   packageInfo,
   type,
   deferredInstallations,
+  sloAssets,
   forceRefreshAssets,
 }) => {
   const { notifications } = useStartServices();
   const [isLoading, setIsLoading] = useState(false);
+  const deferredSloTransforms = sloAssets.map((i) => ({
+    id: `slo-${i.id}-1`,
+    attributes: {
+      title: `slo-${i.id}-1`,
+      description: i.type,
+    },
+  }));
   const deferredTransforms = useMemo(
     () =>
       deferredInstallations.map((i) => ({
@@ -104,6 +114,10 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
     useAuthz().packagePrivileges?.transform?.actions?.canStartStopTransform?.executePackageAction ??
     false;
 
+  // TODO authorizeSloTransforms
+  // call reset api
+  // update kibana SO and remove deferred
+
   const authorizeTransforms = useCallback(
     async (transformIds: Array<{ transformId: string }>) => {
       setIsLoading(true);
@@ -116,6 +130,7 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
         { toastLifeTimeMs: 500 }
       );
 
+      // in case of SLO transforms call reset api
       try {
         const reauthorizeTransformResp = await sendRequestReauthorizeTransforms(
           packageInfo.name,
@@ -185,7 +200,57 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
     },
     [notifications.toasts, packageInfo.name, packageInfo.version, forceRefreshAssets]
   );
-  if (deferredTransforms.length === 0) return null;
+  if (deferredTransforms.length === 0 && deferredSloTransforms.length === 0) return null;
+
+  function TransformItem({
+    transformId,
+    idx,
+    itemsNum,
+  }: {
+    transformId: string;
+    idx: number;
+    itemsNum: number;
+  }) {
+    return (
+      <Fragment key={transformId}>
+        <EuiSplitPanel.Inner grow={false} key={`${transformId}-${idx}`}>
+          <EuiFlexGroup>
+            <EuiFlexItem grow={8}>
+              <EuiText size="m">
+                <p>{transformId}</p>
+              </EuiText>
+            </EuiFlexItem>
+            <EuiFlexItem>
+              <EuiToolTip
+                content={
+                  canReauthorizeTransforms
+                    ? undefined
+                    : getDeferredAssetDescription(type, 1, { canReauthorizeTransforms })
+                }
+                data-test-subject={`fleetAssetsReauthorizeTooltip-${transformId}-${isLoading}`}
+              >
+                <EuiButton
+                  isLoading={isLoading}
+                  disabled={!canReauthorizeTransforms}
+                  size={'s'}
+                  onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    authorizeTransforms([{ transformId }]);
+                  }}
+                >
+                  {i18n.translate('xpack.fleet.epm.packageDetails.assets.reauthorizeButton', {
+                    defaultMessage: 'Reauthorize',
+                  })}
+                </EuiButton>
+              </EuiToolTip>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiSplitPanel.Inner>
+        {idx + 1 < itemsNum && <EuiHorizontalRule margin="none" />}
+      </Fragment>
+    );
+  }
+
   return (
     <EuiAccordion
       initialIsOpen={true}
@@ -198,7 +263,7 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiNotificationBadge color="accent" size="m">
-              <h3>{deferredTransforms.length}</h3>
+              <h3>{deferredTransforms.length + deferredSloTransforms.length}</h3>
             </EuiNotificationBadge>
           </EuiFlexItem>
         </EuiFlexGroup>
@@ -209,7 +274,7 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
         <EuiSpacer size="m" />
 
         <EuiText>
-          {getDeferredAssetDescription(type, deferredInstallations.length, {
+          {getDeferredAssetDescription(type, deferredInstallations.length + sloAssets.length, {
             canReauthorizeTransforms,
           })}{' '}
         </EuiText>
@@ -222,11 +287,19 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
           size={'m'}
           onClick={(e: MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
-            authorizeTransforms(deferredTransforms.map((t) => ({ transformId: t.id })));
+            authorizeTransforms(
+              deferredTransforms
+                .map((t) => ({ transformId: t.id }))
+                .concat(deferredSloTransforms.map((t) => ({ transformId: t.id })))
+            );
           }}
-          aria-label={getDeferredAssetDescription(type, deferredInstallations.length, {
-            canReauthorizeTransforms,
-          })}
+          aria-label={getDeferredAssetDescription(
+            type,
+            deferredInstallations.length + sloAssets.length,
+            {
+              canReauthorizeTransforms,
+            }
+          )}
         >
           {i18n.translate('xpack.fleet.epm.packageDetails.assets.reauthorizeAllButton', {
             defaultMessage: 'Reauthorize all',
@@ -238,45 +311,20 @@ export const DeferredTransformAccordion: FunctionComponent<Props> = ({
         <EuiSplitPanel.Outer hasBorder hasShadow={false}>
           {deferredTransforms.map(({ id: transformId }, idx) => {
             return (
-              <Fragment key={transformId}>
-                <EuiSplitPanel.Inner grow={false} key={`${transformId}-${idx}`}>
-                  <EuiFlexGroup>
-                    <EuiFlexItem grow={8}>
-                      <EuiText size="m">
-                        <p>{transformId}</p>
-                      </EuiText>
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                      <EuiToolTip
-                        content={
-                          canReauthorizeTransforms
-                            ? undefined
-                            : getDeferredAssetDescription(type, 1, { canReauthorizeTransforms })
-                        }
-                        data-test-subject={`fleetAssetsReauthorizeTooltip-${transformId}-${isLoading}`}
-                      >
-                        <EuiButton
-                          isLoading={isLoading}
-                          disabled={!canReauthorizeTransforms}
-                          size={'s'}
-                          onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                            e.preventDefault();
-                            authorizeTransforms([{ transformId }]);
-                          }}
-                        >
-                          {i18n.translate(
-                            'xpack.fleet.epm.packageDetails.assets.reauthorizeButton',
-                            {
-                              defaultMessage: 'Reauthorize',
-                            }
-                          )}
-                        </EuiButton>
-                      </EuiToolTip>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-                </EuiSplitPanel.Inner>
-                {idx + 1 < deferredTransforms.length && <EuiHorizontalRule margin="none" />}
-              </Fragment>
+              <TransformItem
+                transformId={transformId}
+                idx={idx}
+                itemsNum={deferredTransforms.length}
+              />
+            );
+          })}
+          {deferredSloTransforms.map(({ id: transformId }, idx) => {
+            return (
+              <TransformItem
+                transformId={transformId}
+                idx={idx}
+                itemsNum={deferredSloTransforms.length}
+              />
             );
           })}
         </EuiSplitPanel.Outer>

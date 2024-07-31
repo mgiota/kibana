@@ -74,6 +74,7 @@ export const AssetsPage = ({ packageInfo, refetchPackageInfo }: AssetsPanelProps
     Record<string, Record<string, SimpleSOAssetType & { appLink?: string }>>
   >({});
   const [deferredInstallations, setDeferredInstallations] = useState<EsAssetReference[]>();
+  const [sloAssets, setSloAssets] = useState<KibanaAssetReference[]>();
 
   const kibanaAssets = useMemo(() => {
     return !installedSpaceId || installedSpaceId === spaceId
@@ -127,6 +128,13 @@ export const AssetsPage = ({ packageInfo, refetchPackageInfo }: AssetsPanelProps
           return 'deferred' in asset && asset.deferred === true;
         });
         setDeferredInstallations(deferredAssets);
+
+        setSloAssets(
+          pkgAssets.filter(
+            (asset): asset is KibanaAssetReference =>
+              asset.type === 'slo' && 'deferred' in asset && asset.deferred
+          )
+        );
       }
 
       try {
@@ -165,7 +173,8 @@ export const AssetsPage = ({ packageInfo, refetchPackageInfo }: AssetsPanelProps
   }
 
   const hasDeferredInstallations =
-    Array.isArray(deferredInstallations) && deferredInstallations.length > 0;
+    (Array.isArray(deferredInstallations) && deferredInstallations.length > 0) ||
+    (Array.isArray(sloAssets) && sloAssets.length > 0);
 
   let content: JSX.Element | Array<JSX.Element | null> | null;
   if (isLoading) {
@@ -290,7 +299,8 @@ export const AssetsPage = ({ packageInfo, refetchPackageInfo }: AssetsPanelProps
   const deferredInstallationsContent = hasDeferredInstallations ? (
     <>
       <DeferredAssetsSection
-        deferredInstallations={deferredInstallations}
+        sloAssets={sloAssets ?? []}
+        deferredInstallations={deferredInstallations ?? []}
         packageInfo={packageInfo}
         forceRefreshAssets={forceRefreshAssets}
       />

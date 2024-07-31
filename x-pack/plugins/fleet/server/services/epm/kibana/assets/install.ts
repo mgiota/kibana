@@ -436,7 +436,6 @@ export function getKibanaAssets(
   packageInstallContext.paths.filter(isKibanaAssetType).forEach((path) => {
     const buffer = getAssetFromAssetsMap(packageInstallContext.assetsMap, path);
     const asset = JSON.parse(buffer.toString('utf8'));
-
     const assetType = getPathParts(path).type as KibanaAssetType;
     const soType = KibanaSavedObjectTypeMapping[assetType];
     if (asset.type === soType) {
@@ -589,7 +588,9 @@ function removeReservedIndexPatterns(kibanaAssets: ArchiveAsset[]) {
 
 export function toAssetReference({ id, type }: SavedObject) {
   const reference: AssetReference = { id, type: type as KibanaSavedObjectType };
-
+  if (type === KibanaAssetType.slo) {
+    reference.deferred = true; // TODO check isUnauthorizedAPIKey x-pack/plugins/fleet/server/services/epm/elasticsearch/transform/install.ts
+  }
   return reference;
 }
 

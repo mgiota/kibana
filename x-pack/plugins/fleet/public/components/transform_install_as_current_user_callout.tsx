@@ -12,6 +12,13 @@ import { uniqBy } from 'lodash';
 
 import type { PackageInfo } from '../../common';
 
+export const getNumSLOTransformAssets = (assets?: PackageInfo['assets']) => {
+  if (!assets || !(Array.isArray(assets.kibana?.slo) && assets.kibana?.slo?.length > 0)) {
+    return 0;
+  }
+  return assets.kibana?.slo.length;
+};
+
 export const getNumTransformAssets = (assets?: PackageInfo['assets']) => {
   if (
     !assets ||

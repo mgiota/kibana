@@ -14,7 +14,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 
 import { useAuthz } from '../../../../../../../hooks';
 
-import type { EsAssetReference } from '../../../../../../../../common';
+import type { EsAssetReference, KibanaAssetReference } from '../../../../../../../../common';
 
 import type { PackageInfo } from '../../../../../types';
 import { ElasticsearchAssetType } from '../../../../../types';
@@ -27,12 +27,14 @@ interface Props {
   packageInfo: PackageInfo;
   deferredInstallations: EsAssetReference[];
   forceRefreshAssets?: () => void;
+  sloAssets: KibanaAssetReference[];
 }
 
 export const DeferredAssetsSection: FunctionComponent<Props> = ({
   deferredInstallations,
   packageInfo,
   forceRefreshAssets,
+  sloAssets,
 }) => {
   const authz = useAuthz();
 
@@ -63,6 +65,7 @@ export const DeferredAssetsSection: FunctionComponent<Props> = ({
         type={ElasticsearchAssetType.transform}
         deferredInstallations={deferredTransforms}
         forceRefreshAssets={forceRefreshAssets}
+        sloAssets={sloAssets}
       />
     </>
   );

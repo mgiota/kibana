@@ -153,7 +153,6 @@ export type {
   NewOutput,
   PackageAssetReference,
   KibanaAssetReference,
-  KibanaSavedObjectType,
   EsAssetReference,
   AssetsGroupedByServiceByType,
   KibanaAssetTypeToParts,
@@ -200,3 +199,5 @@ export type {
 } from './types';
 
 export { ElasticsearchAssetType } from './types';
+
+export { KibanaSavedObjectType } from './types';

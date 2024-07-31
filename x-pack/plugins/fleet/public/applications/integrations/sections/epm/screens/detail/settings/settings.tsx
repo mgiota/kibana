@@ -25,6 +25,7 @@ import { i18n } from '@kbn/i18n';
 
 import {
   getNumTransformAssets,
+  getNumSLOTransformAssets,
   TransformInstallWithCurrentUserPermissionCallout,
 } from '../../../../../../../components/transform_install_as_current_user_callout';
 
@@ -238,8 +239,9 @@ export const SettingsPage: React.FC<Props> = memo(
 
     const isUpdating = installationStatus === InstallStatus.installing && installedVersion;
 
-    const { numOfAssets, numTransformAssets } = useMemo(
+    const { numOfAssets, numTransformAssets, numSloAssets } = useMemo(
       () => ({
+        numSloAssets: getNumSLOTransformAssets(packageInfo.assets),
         numTransformAssets: getNumTransformAssets(packageInfo.assets),
         numOfAssets: Object.entries(packageInfo.assets).reduce(
           (acc, [serviceName, serviceNameValue]) =>
@@ -366,10 +368,10 @@ export const SettingsPage: React.FC<Props> = memo(
                       </EuiTitle>
                       <EuiSpacer size="s" />
 
-                      {numTransformAssets > 0 ? (
+                      {numTransformAssets > 0 || numSloAssets > 0 ? (
                         <>
                           <TransformInstallWithCurrentUserPermissionCallout
-                            count={numTransformAssets}
+                            count={numTransformAssets + numSloAssets}
                           />
                           <EuiSpacer size="s" />
                         </>
