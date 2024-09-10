@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { BehaviorSubject, map, Observable } from 'rxjs';
+import { PresentationContainer } from '@kbn/presentation-containers';
 import {
   AppMountParameters,
   AppUpdater,
@@ -381,7 +382,7 @@ export class DiscoverPlugin
           },
           discoverServices: services,
         });
-        container.addNewPanel({
+        (container as PresentationContainer).addNewPanel({
           panelType: SEARCH_EMBEDDABLE_TYPE,
           initialState,
         });

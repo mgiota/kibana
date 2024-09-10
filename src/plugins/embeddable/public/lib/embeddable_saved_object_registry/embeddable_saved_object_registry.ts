@@ -13,22 +13,27 @@ import { PresentationContainer } from '@kbn/presentation-containers';
 import { FinderAttributes, SavedObjectCommon } from '@kbn/saved-objects-finder-plugin/common';
 import { SavedObjectMetaData } from '@kbn/saved-objects-finder-plugin/public';
 
-type SOToEmbeddable<TSavedObjectAttributes extends FinderAttributes = FinderAttributes> = (
-  container: PresentationContainer,
+type SOToEmbeddable<
+  TSavedObjectAttributes extends FinderAttributes = FinderAttributes,
+  C extends Partial<PresentationContainer> = PresentationContainer
+> = (
+  container: Partial<PresentationContainer>,
   savedObject: SavedObjectCommon<TSavedObjectAttributes>
 ) => void;
 
 export type ReactEmbeddableSavedObject<
-  TSavedObjectAttributes extends FinderAttributes = FinderAttributes
+  TSavedObjectAttributes extends FinderAttributes = FinderAttributes,
+  C extends Partial<PresentationContainer> = PresentationContainer
 > = {
-  onAdd: SOToEmbeddable<TSavedObjectAttributes>;
+  onAdd: SOToEmbeddable<TSavedObjectAttributes, C>;
   savedObjectMetaData: SavedObjectMetaData;
 };
 
 const registry: Map<string, ReactEmbeddableSavedObject<any>> = new Map();
 
 export const registerReactEmbeddableSavedObject = <
-  TSavedObjectAttributes extends FinderAttributes
+  TSavedObjectAttributes extends FinderAttributes,
+  C extends Partial<PresentationContainer> = PresentationContainer
 >({
   onAdd,
   embeddableType,
@@ -38,7 +43,7 @@ export const registerReactEmbeddableSavedObject = <
   getSavedObjectSubType,
   getTooltipForSavedObject,
 }: {
-  onAdd: SOToEmbeddable<TSavedObjectAttributes>;
+  onAdd: SOToEmbeddable<TSavedObjectAttributes, Partial<PresentationContainer>>;
   embeddableType: string;
   savedObjectType: string;
   savedObjectName: string;

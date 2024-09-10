@@ -72,6 +72,7 @@ import {
 import type { NoDataPagePluginStart } from '@kbn/no-data-page-plugin/public';
 import { EmbeddableEnhancedPluginStart } from '@kbn/embeddable-enhanced-plugin/public';
 
+import { PresentationContainer } from '@kbn/presentation-containers';
 import type { TypesSetup, TypesStart } from './vis_types';
 import type { VisualizeServices } from './visualize_app/types';
 import {
@@ -412,7 +413,7 @@ export class VisualizationsPlugin
     });
     embeddable.registerReactEmbeddableSavedObject<VisualizationSavedObjectAttributes>({
       onAdd: (container, savedObject) => {
-        container.addNewPanel<VisualizeSerializedState>({
+        (container as PresentationContainer).addNewPanel<VisualizeSerializedState>({
           panelType: VISUALIZE_EMBEDDABLE_TYPE,
           initialState: { savedObjectId: savedObject.id },
         });

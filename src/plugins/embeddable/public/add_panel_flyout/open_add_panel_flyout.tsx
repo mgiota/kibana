@@ -23,12 +23,14 @@ const LazyAddPanelFlyout = React.lazy(async () => {
 
 const htmlId = htmlIdGenerator('modalTitleId');
 
-export const openAddPanelFlyout = ({
+export const openAddPanelFlyout = <
+  C extends Partial<PresentationContainer> = PresentationContainer
+>({
   container,
   onAddPanel,
   onClose,
 }: {
-  container: PresentationContainer;
+  container: C;
   onAddPanel?: (id: string) => void;
   onClose?: () => void;
 }): OverlayRef => {
@@ -39,7 +41,7 @@ export const openAddPanelFlyout = ({
     toMountPoint(
       <Suspense fallback={<EuiLoadingSpinner />}>
         <LazyAddPanelFlyout
-          container={container}
+          container={container as C}
           onAddPanel={onAddPanel}
           modalTitleId={modalTitleId}
         />

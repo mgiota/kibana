@@ -8,7 +8,7 @@
  */
 
 import { EmbeddableSetup } from '@kbn/embeddable-plugin/public';
-
+import { PresentationContainer } from '@kbn/presentation-containers';
 const MY_EMBEDDABLE_TYPE = 'myEmbeddableType';
 const MY_SAVED_OBJECT_TYPE = 'mySavedObjectType';
 const APP_ICON = 'logoKibana';
@@ -16,7 +16,7 @@ const APP_ICON = 'logoKibana';
 export const registerMyEmbeddableSavedObject = (embeddableSetup: EmbeddableSetup) =>
   embeddableSetup.registerReactEmbeddableSavedObject({
     onAdd: (container, savedObject) => {
-      container.addNewPanel({
+      (container as PresentationContainer).addNewPanel({
         panelType: MY_EMBEDDABLE_TYPE,
         initialState: savedObject.attributes,
       });

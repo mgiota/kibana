@@ -80,12 +80,12 @@ const runAddTelemetry = (
   usageCollection?.reportUiCounter?.(parent.type, METRIC_TYPE.CLICK, `${type}:add`);
 };
 
-export const AddPanelFlyout = ({
+export const AddPanelFlyout = <C extends Partial<PresentationContainer> = PresentationContainer>({
   container,
   onAddPanel,
   modalTitleId,
 }: {
-  container: PresentationContainer;
+  container: C;
   onAddPanel?: (id: string) => void;
   modalTitleId?: string;
 }) => {
@@ -138,7 +138,7 @@ export const AddPanelFlyout = ({
         const factory = factoriesBySavedObjectType[type];
         const { onAdd, savedObjectMetaData } = factory;
 
-        onAdd(container, savedObject);
+        onAdd(container as C, savedObject);
         runAddTelemetry(container, factory.type, savedObject, savedObjectMetaData);
         return;
       }

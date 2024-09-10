@@ -6,6 +6,7 @@
  */
 
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/public';
+import { PresentationContainer } from '@kbn/presentation-containers';
 import { i18n } from '@kbn/i18n';
 import { MapAttributes } from '../../common/content_management';
 import { MAP_SAVED_OBJECT_TYPE, APP_ICON } from '../../common/constants';
@@ -24,7 +25,7 @@ export function setupMapEmbeddable(embeddableSetup: EmbeddableSetup) {
 
   embeddableSetup.registerReactEmbeddableSavedObject<MapAttributes>({
     onAdd: (container, savedObject) => {
-      container.addNewPanel({
+      (container as PresentationContainer).addNewPanel({
         panelType: MAP_SAVED_OBJECT_TYPE,
         initialState: { savedObjectId: savedObject.id },
       });

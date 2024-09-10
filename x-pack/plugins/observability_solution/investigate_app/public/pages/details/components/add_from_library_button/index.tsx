@@ -13,7 +13,7 @@ import type { FinderAttributes } from '@kbn/saved-objects-finder-plugin/common';
 import React, { useMemo, useRef } from 'react';
 import { Item } from '@kbn/investigation-shared';
 
-import { PresentationContainer } from '@kbn/presentation-containers';
+import { CanAddNewPanel } from '@kbn/presentation-containers';
 import { useKibana } from '../../../../hooks/use_kibana';
 import { InvestigateTextButton } from '../investigate_text_button';
 
@@ -30,15 +30,15 @@ export function AddFromLibraryButton({ onItemAdd }: AddFromLibraryButtonProps) {
 
   const panelRef = useRef<OverlayRef>();
 
-  const container = useMemo<
-    Pick<PresentationContainer, 'addNewPanel'> & {
-      addNewEmbeddable: (
-        type: string,
-        explicitInput: { savedObjectId: string },
-        attributes: FinderAttributes
-      ) => Promise<{ id: string }>;
-    }
-  >(() => {
+  type InvestigationContainer = CanAddNewPanel & {
+    addNewEmbeddable: (
+      type: string,
+      explicitInput: { savedObjectId: string },
+      attributes: FinderAttributes
+    ) => Promise<{ id: string }>;
+  };
+
+  const container = useMemo<InvestigationContainer>(() => {
     function addEmbeddable({
       type,
       title,
