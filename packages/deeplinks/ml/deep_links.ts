@@ -12,6 +12,7 @@ export const ML_APP_ID = 'ml';
 export type AppId = typeof ML_APP_ID;
 
 export type LinkId =
+  | 'landing'
   | 'overview'
   | 'anomalyDetection'
   | 'anomalyExplorer'

@@ -349,9 +349,8 @@ export function createNavTree(pluginsStart: ObservabilityPublicPluginsStart) {
             link: 'fleet',
           },
           {
-            id: 'machine_learning-landing',
-            // link: 'securitySolutionUI:machine_learning-landing',
-            link: 'machine_learning-landing',
+            id: 'landing',
+            link: 'ml:landing',
             renderAs: 'panelOpener',
             spaceBefore: null,
             children: [

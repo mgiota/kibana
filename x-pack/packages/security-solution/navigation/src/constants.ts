@@ -59,6 +59,7 @@ export enum ExternalPageName {
   mlExplainLogRateSpikes = 'ml:logRateAnalysis',
   mlLogPatternAnalysis = 'ml:logPatternAnalysis',
   mlChangePointDetections = 'ml:changePointDetections',
+  // mlLanding = 'ml:landing',
   // Dev Tools
   // Ref: packages/default-nav/devtools/default_navigation.ts
   devTools = 'dev_tools:',

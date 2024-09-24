@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import { LandingLinksIconsCategories } from '@kbn/landing-pages';
-// import { LandingLinksIconsCategories } from '@kbn/security-solution-navigation/landing_links';
+import { LandingLinksIconsCategories } from '@kbn/security-solution-navigation/landing_links';
 import { SecurityPageName } from '@kbn/security-solution-navigation';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { EuiPageHeader, EuiSpacer } from '@elastic/eui';
@@ -15,6 +14,7 @@ import { useRootNavLink } from '../common/links/nav_links';
 
 export const MachineLearning: React.FC = () => {
   const link = useRootNavLink(SecurityPageName.mlLanding);
+  console.log(link, '!!link')
   const { links = [], categories = [], title } = link ?? {};
 
   return (

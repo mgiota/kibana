@@ -7,19 +7,26 @@
 import React, { useMemo } from 'react';
 import { css } from '@emotion/react';
 import { EuiHorizontalRule, EuiSpacer, EuiTitle, useEuiTheme } from '@elastic/eui';
-import type { NavigationLink, LinkCategories } from '@kbn/security-solution-navigation';
-import { LinkCategoryType } from '@kbn/security-solution-navigation';
-import { LandingLinksIcons } from './landing_links_icons';
+// import type { NavigationLink, LinkCategories } from '@kbn/security-solution-navigation';
+// import { LinkCategoryType } from '@kbn/security-solution-navigation';
+// import { LandingLinksIcons } from './landing_links_icons';
 
-export interface LandingLinksIconsCategoriesProps {
-  links: Readonly<NavigationLink[]>;
-  /** Only `title` and `separator` category types supported */
-  categories: Readonly<LinkCategories>;
-  urlState?: string;
-  onLinkClick?: (id: string) => void;
+export enum LinkCategoryType {
+  title = 'title',
+  collapsibleTitle = 'collapsibleTitle',
+  accordion = 'accordion',
+  separator = 'separator',
 }
 
-type CategoriesLinks = Array<{ type?: LinkCategoryType; label?: string; links: NavigationLink[] }>;
+// export interface LandingLinksIconsCategoriesProps {
+//   links: Readonly<NavigationLink[]>;
+//   /** Only `title` and `separator` category types supported */
+//   categories: Readonly<LinkCategories>;
+//   urlState?: string;
+//   onLinkClick?: (id: string) => void;
+// }
+
+// type CategoriesLinks = Array<{ type?: LinkCategoryType; label?: string; links: NavigationLink[] }>;
 
 const useStyles = () => {
   const { euiTheme } = useEuiTheme();
@@ -31,13 +38,13 @@ const useStyles = () => {
   };
 };
 
-export const LandingLinksIconsCategories: React.FC<LandingLinksIconsCategoriesProps> = React.memo(
+export const LandingLinksIconsCategories: React.FC = React.memo(
   function LandingLinksIconsCategories({ links, categories, urlState, onLinkClick }) {
     const categoriesLinks = useMemo(() => {
       const linksById = Object.fromEntries(links.map((link) => [link.id, link]));
 
-      return categories.reduce<CategoriesLinks>((acc, { label, linkIds, type }) => {
-        const linksItem = linkIds?.reduce<NavigationLink[]>((linksAcc, linkId) => {
+      return categories.reduce((acc, { label, linkIds, type }) => {
+        const linksItem = linkIds?.reduce((linksAcc, linkId) => {
           if (linksById[linkId]) {
             linksAcc.push(linksById[linkId]);
           }
@@ -49,18 +56,18 @@ export const LandingLinksIconsCategories: React.FC<LandingLinksIconsCategoriesPr
         return acc;
       }, []);
     }, [links, categories]);
-
+    console.log(categoriesLinks, '!!categoriesLinks')
     return (
       <>
         {categoriesLinks.map(
           ({ type = LinkCategoryType.title, label, links: categoryLinks }, index) => (
             <div key={`${index}_${label}`}>
               <CategoryHeading type={type} label={label} index={index} />
-              <LandingLinksIcons
+              {/* <LandingLinksIcons
                 items={categoryLinks}
                 urlState={urlState}
                 onLinkClick={onLinkClick}
-              />
+              /> */}
               <EuiSpacer size="l" />
             </div>
           )
