@@ -14,7 +14,7 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { LinkAnchor } from '@kbn/security-solution-navigation';
-import type { NavigationLink } from '@kbn/security-solution-navigation';
+import type { NavigationLink } from './types';
 import { getKibanaLinkProps } from './utils';
 
 type LandingLinkProps = EuiLinkAnchorProps &

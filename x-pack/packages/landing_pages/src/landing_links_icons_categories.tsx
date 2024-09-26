@@ -7,26 +7,19 @@
 import React, { useMemo } from 'react';
 import { css } from '@emotion/react';
 import { EuiHorizontalRule, EuiSpacer, EuiTitle, useEuiTheme } from '@elastic/eui';
-// import type { NavigationLink, LinkCategories } from '@kbn/security-solution-navigation';
-// import { LinkCategoryType } from '@kbn/security-solution-navigation';
+import type { NavigationLink, LinkCategories } from './types';
 // import { LandingLinksIcons } from './landing_links_icons';
+import { LinkCategoryType } from './constants';
 
-export enum LinkCategoryType {
-  title = 'title',
-  collapsibleTitle = 'collapsibleTitle',
-  accordion = 'accordion',
-  separator = 'separator',
+export interface LandingLinksIconsCategoriesProps {
+  links: Readonly<NavigationLink[]>;
+  /** Only `title` and `separator` category types supported */
+  categories: Readonly<LinkCategories>;
+  urlState?: string;
+  onLinkClick?: (id: string) => void;
 }
 
-// export interface LandingLinksIconsCategoriesProps {
-//   links: Readonly<NavigationLink[]>;
-//   /** Only `title` and `separator` category types supported */
-//   categories: Readonly<LinkCategories>;
-//   urlState?: string;
-//   onLinkClick?: (id: string) => void;
-// }
-
-// type CategoriesLinks = Array<{ type?: LinkCategoryType; label?: string; links: NavigationLink[] }>;
+type CategoriesLinks = Array<{ type?: LinkCategoryType; label?: string; links: NavigationLink[] }>;
 
 const useStyles = () => {
   const { euiTheme } = useEuiTheme();
@@ -38,13 +31,13 @@ const useStyles = () => {
   };
 };
 
-export const LandingLinksIconsCategories: React.FC = React.memo(
+export const LandingLinksIconsCategories: React.FC<LandingLinksIconsCategoriesProps> = React.memo(
   function LandingLinksIconsCategories({ links, categories, urlState, onLinkClick }) {
     const categoriesLinks = useMemo(() => {
       const linksById = Object.fromEntries(links.map((link) => [link.id, link]));
 
-      return categories.reduce((acc, { label, linkIds, type }) => {
-        const linksItem = linkIds?.reduce((linksAcc, linkId) => {
+      return categories.reduce<CategoriesLinks>((acc, { label, linkIds, type }) => {
+        const linksItem = linkIds?.reduce<NavigationLink[]>((linksAcc, linkId) => {
           if (linksById[linkId]) {
             linksAcc.push(linksById[linkId]);
           }

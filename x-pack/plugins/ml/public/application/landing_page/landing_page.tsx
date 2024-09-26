@@ -5,11 +5,65 @@
  * 2.0.
  */
 import React from 'react';
-import { LandingLinksIconsCategories } from '@kbn/landing-pages';
-import { LinkCategoryType } from '@kbn/security-solution-navigation';
+
+import { LandingLinksIconsCategories } from '@kbn/security-solution-navigation/landing_links';
+// import { LandingLinksIconsCategories } from '@kbn/landing-pages';
+import { LinkCategoryType, NavigationProvider } from '@kbn/security-solution-navigation';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
+import { useKibana } from '@kbn/kibana-react-plugin/public';
+import type { InternalChromeStart } from '@kbn/core-chrome-browser-internal';
+import useObservable from 'react-use/lib/useObservable';
 import { EuiPageHeader, EuiSpacer } from '@elastic/eui';
+import { ProjectNavigationService } from '@kbn/core-chrome-browser-internal';
+import type { ChromeProjectNavigationNode } from '@kbn/core-chrome-browser';
 import { IconLensLazy } from './lazy_icons';
+
+const mockCore = {
+  application: {
+    navigateToApp: () => {},
+    getUrlForApp: () => '#',
+  },
+}
+// import { InternalChromeStart } from '@kbn/core-chrome-browser-internal';
+
+// const find = (id: string, nodes: any): ChromeProjectNavigationNode | null => {
+//   // Recursively search for the node with the given id
+//   for (const node of nodes) {
+//     if (node.id === id) {
+//       return node;
+//     }
+//     if (node.children) {
+//       const found = find(id, node.children);
+//       if (found) {
+//         return found;
+//       }
+//     }
+//   }
+//   return null;
+// };
+
+function findNodeById(id: string, navigationTree$: any): ChromeProjectNavigationNode | null {
+  const allNodes = navigationTree$.footer;
+  console.log(allNodes, '!!allNodes')
+  if (!allNodes) return null;
+
+   const find = (nodes: ChromeProjectNavigationNode[]): ChromeProjectNavigationNode | null => {
+    // Recursively search for the node with the given id
+    for (const node of nodes) {
+      if (node.id === id) {
+        return node;
+      }
+      if (node.children) {
+        const found = find(node.children);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  return find(allNodes);
+}
 
 // export const mlNavCategories = [
 //   {
@@ -186,6 +240,18 @@ import { IconLensLazy } from './lazy_icons';
 
 // MachineLearningLandingPage
 export const LandingPage: React.FC = () => {
+  const { services } = useKibana();
+  const chrome = services.chrome;
+  const { project } = chrome as InternalChromeStart;
+  console.log(project, '!!chrome');
+  const navigationTreeUi$ = project.getNavigationTreeUi$();
+  console.log(navigationTreeUi$, '!!navigationTreeUi$');
+  const navigationTree = useObservable(navigationTreeUi$, { body: [] });
+  console.log(navigationTree, '!!navigationTree')
+  const x = findNodeById('landing', navigationTree);
+  console.log(x, '!!xx')
+  // console.log(navigationTree.footer, '!!navigationTree');
+  // const x = find('landing', navigationTree.footer);
   // useKibana -> get chrome
   // const { chrome } = useKibana().services;
   // chrome.
@@ -221,7 +287,9 @@ export const LandingPage: React.FC = () => {
         <EuiPageHeader pageTitle={title} />
         <EuiSpacer size="l" />
         <EuiSpacer size="xl" />
-        <LandingLinksIconsCategories links={links} categories={categories} />
+        <NavigationProvider core={mockCore}>
+          <LandingLinksIconsCategories links={links} categories={categories} />
+        </NavigationProvider>
       </KibanaPageTemplate.Section>
     </KibanaPageTemplate>
   );

@@ -22,22 +22,3 @@ const withSuspense: WithSuspense = (Component) =>
 
 const LandingLinksIconsCategoriesLazy = lazy(() => import('./landing_links_icons_categories'));
 export const LandingLinksIconsCategories = withSuspense(LandingLinksIconsCategoriesLazy);
-
-// const LandingLinksIconsLazy = lazy(() => import('./landing_links_icons'));
-// export const LandingLinksIcons = withSuspense(LandingLinksIconsLazy);
-
-// const LandingLinksIconsGroupsLazy = lazy(() => import('./landing_links_icons_groups'));
-// export const LandingLinksIconsGroups = withSuspense(LandingLinksIconsGroupsLazy);
-
-// const LandingLinksImagesLazy = lazy(() => import('./landing_links_images'));
-// export const LandingLinksImages = withSuspense(LandingLinksImagesLazy);
-
-// const LandingLinksImageCardsLazy = lazy(() => import('./landing_links_images_cards'));
-// export const LandingLinksImageCards = withSuspense(LandingLinksImageCardsLazy);
-
-// const LandingLinksIconsCategoriesGroupsLazy = lazy(
-//   () => import('./landing_links_icons_categories_groups')
-// );
-// export const LandingLinksIconsCategoriesGroups = withSuspense(
-//   LandingLinksIconsCategoriesGroupsLazy
-// );
