@@ -18,9 +18,10 @@ import { useGetFilteredRuleTypes } from '../../hooks/use_get_filtered_rule_types
 interface RulesTabProps {
   setRefresh: React.Dispatch<React.SetStateAction<Date>>;
   stateRefresh: Date;
+  registeredPanels: any;
 }
 
-export function RulesTab({ setRefresh, stateRefresh }: RulesTabProps) {
+export function RulesTab({ setRefresh, stateRefresh, registeredPanels, openFlyout }: RulesTabProps) {
   const {
     triggersActionsUi: { getRulesList: RuleList },
   } = useKibana().services;
@@ -76,6 +77,8 @@ export function RulesTab({ setRefresh, stateRefresh }: RulesTabProps) {
 
   return (
     <RuleList
+      openFlyout={openFlyout}
+      registeredPanels={registeredPanels}
       ruleTypeIds={OBSERVABILITY_RULE_TYPE_IDS_WITH_SUPPORTED_STACK_RULE_TYPES}
       consumers={observabilityAlertFeatureIds}
       filteredRuleTypes={filteredRuleTypes}

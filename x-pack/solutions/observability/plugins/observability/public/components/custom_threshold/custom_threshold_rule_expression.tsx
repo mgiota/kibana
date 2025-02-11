@@ -7,8 +7,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
+import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import {
   EuiButtonEmpty,
+  EuiButton,
+  EuiFlyoutResizable,
+  EuiFlyoutProps,
   EuiCallOut,
   EuiCheckbox,
   EuiEmptyPrompt,
@@ -21,6 +25,9 @@ import {
   EuiTitle,
   EuiFlexItem,
   EuiComboBox,
+  EuiFlyout,
+  EuiFlyoutHeader,
+  EuiFlyoutBody,
 } from '@elastic/eui';
 import { ISearchSource, Query } from '@kbn/data-plugin/common';
 import { DataView } from '@kbn/data-views-plugin/common';
@@ -37,6 +44,7 @@ import {
 
 import { COMPARATORS } from '@kbn/alerting-comparators';
 import { SimpleSavedObject } from '@kbn/core/public';
+import { SavedObjectFinder } from '@kbn/saved-objects-finder-plugin/public';
 import { useKibana } from '../../utils/kibana_react';
 import { Aggregators } from '../../../common/custom_threshold_rule/types';
 import { TimeUnitChar } from '../../../common/utils/formatters/duration';
@@ -45,7 +53,6 @@ import { ExpressionRow } from './components/expression_row';
 import { MetricsExplorerFields, GroupBy } from './components/group_by';
 import { RuleConditionChart as PreviewChart } from '../rule_condition_chart/rule_condition_chart';
 import { getSearchConfiguration } from './helpers/get_search_configuration';
-
 const FILTER_TYPING_DEBOUNCE_MS = 500;
 
 type Props = Omit<
@@ -78,6 +85,9 @@ export default function Expressions(props: Props) {
       ui: { SearchBar },
     },
     savedObjects,
+    savedObjectsTagging,
+    uiSettings,
+    contentManagement: { client: contentClient },
   } = useKibana().services;
 
   const hasGroupBy = useMemo<boolean>(
@@ -90,6 +100,9 @@ export default function Expressions(props: Props) {
   const [dataView, setDataView] = useState<DataView>();
   const [dataViewTimeFieldError, setDataViewTimeFieldError] = useState<string>();
   const [searchSource, setSearchSource] = useState<ISearchSource>();
+  const [flyoutType, setFlyoutType] = useState('overlay');
+
+  const [flyoutSide, setFlyoutSide] = useState('left');
   const [paramsError, setParamsError] = useState<Error>();
   const [paramsWarning, setParamsWarning] = useState<string>();
   const [isNoDataChecked, setIsNoDataChecked] = useState<boolean>(
@@ -103,6 +116,8 @@ export default function Expressions(props: Props) {
     }),
     [dataView]
   );
+
+  const { openLeftPanel } = useExpandableFlyoutApi();
 
   useEffect(() => {
     const initSearchSource = async () => {
@@ -353,6 +368,7 @@ export default function Expressions(props: Props) {
     }
   }, [metadata, setRuleParams]);
 
+  const [isAddFromDashboardsOpen, setIsAddFromDashboardsOpen] = useState(false);
   const [dashboardList, setDashboardList] = useState<
     Array<{
       value: string;
@@ -402,6 +418,14 @@ export default function Expressions(props: Props) {
     },
     [savedObjects]
   );
+
+  const handleAddFromDashboards = () => {
+    // console.log('!!add me')
+    openLeftPanel({
+      id: 'demoLeft',
+    });
+    // setIsAddFromDashboardsOpen(true);
+  };
 
   useEffect(() => {
     loadDashboards();
@@ -689,6 +713,53 @@ export default function Expressions(props: Props) {
         <EuiSpacer size="m" />
       </EuiFlexItem>
       <EuiSpacer size="m" />
+      <EuiFlexItem>
+        <EuiButtonEmpty data-test-subj="addFromLibraryButton" onClick={handleAddFromDashboards}>
+          {i18n.translate(
+            'xpack.observability.addFromLibraryButton.addFromLibraryButtonEmptyLabel',
+            {
+              defaultMessage: 'Add from dashboards',
+            }
+          )}
+        </EuiButtonEmpty>
+      </EuiFlexItem>
+      {isAddFromDashboardsOpen && (
+        <EuiFlyoutResizable
+          type={flyoutType as EuiFlyoutProps['type']}
+          side={flyoutSide as EuiFlyoutProps['side']}
+          onClose={() => {}}
+        >
+          <EuiFlyoutHeader hasBorder>
+            <EuiTitle size="m">
+              <h2>
+                <FormattedMessage
+                  id="xpack.observability.topNav.openSearchPanel.openSearchTitle"
+                  defaultMessage="Dashboards"
+                />
+              </h2>
+            </EuiTitle>
+          </EuiFlyoutHeader>
+          <EuiFlyoutBody>
+            <SavedObjectFinder
+              services={{ contentClient, uiSettings }}
+              savedObjectMetaData={[
+                {
+                  type: 'dashboard',
+
+                  // type: SEARCH_OBJECT_TYPE,
+                  getIconForSavedObject: () => 'discoverApp',
+                  name: i18n.translate('xpack.observability.slosPage.savedSearch.savedObjectName', {
+                    defaultMessage: 'Dashboards',
+                  }),
+                },
+              ]}
+              onChoose={(...args) => {
+                const savedSearch = args[3];
+              }}
+            />
+          </EuiFlyoutBody>
+        </EuiFlyoutResizable>
+      )}
     </>
   );
 }

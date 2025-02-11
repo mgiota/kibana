@@ -10,6 +10,8 @@ import type { ChartsPluginStart } from '@kbn/charts-plugin/public';
 import type { CloudStart } from '@kbn/cloud-plugin/public';
 import type { ContentManagementPublicStart } from '@kbn/content-management-plugin/public';
 import type { IUiSettingsClient } from '@kbn/core/public';
+import type { SavedObjectsTaggingApi } from '@kbn/saved-objects-tagging-oss-plugin/public';
+import type { ContentClient } from '@kbn/content-management-plugin/public';
 import {
   App,
   AppDeepLink,
@@ -165,6 +167,8 @@ export interface ObservabilityPublicPluginsStart {
   toastNotifications: ToastsStart;
   investigate?: InvestigatePublicStart;
   streams?: StreamsPluginStart;
+  savedObjectsTagging?: SavedObjectsTaggingApi;
+  contentClient: ContentClient;
 }
 export type ObservabilityPublicStart = ReturnType<Plugin['start']>;
 

@@ -5,7 +5,17 @@
  * 2.0.
  */
 
-import { EuiButton, EuiButtonEmpty, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import {
+  EuiButton,
+  EuiButtonEmpty,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiFlyoutFooter,
+  EuiFlyoutHeader,
+  EuiFlyoutBody,
+  EuiPanel,
+  EuiTitle,
+} from '@elastic/eui';
 import { RuleTypeModal } from '@kbn/response-ops-rule-form/src/rule_type_modal';
 import { ALERTING_FEATURE_ID } from '@kbn/alerting-plugin/common';
 import { i18n } from '@kbn/i18n';
@@ -14,6 +24,7 @@ import { useBreadcrumbs } from '@kbn/observability-shared-plugin/public';
 import { useLoadRuleTypesQuery } from '@kbn/triggers-actions-ui-plugin/public';
 import React, { lazy, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { ExpandableFlyout, ExpandableFlyoutProvider, useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { RULES_LOGS_PATH, RULES_PATH, paths } from '../../../common/locators/paths';
 import { useGetFilteredRuleTypes } from '../../hooks/use_get_filtered_rule_types';
 import { usePluginContext } from '../../hooks/use_plugin_context';
@@ -21,6 +32,7 @@ import { useKibana } from '../../utils/kibana_react';
 import { HeaderMenu } from '../overview/components/header_menu/header_menu';
 import { RulesTab } from './rules_tab';
 import { useGetAvailableRulesWithDescriptions } from '../../hooks/use_get_available_rules_with_descriptions';
+import { ObservabilitySolutionFlyout} from '../../flyout/index';
 
 const GlobalLogsTab = lazy(() => import('./global_logs_tab'));
 
@@ -40,6 +52,8 @@ export function RulesPage({ activeTab = RULES_TAB_NAME }: RulesPageProps) {
     serverless,
   } = useKibana().services;
   const { ObservabilityPageTemplate } = usePluginContext();
+  const { openFlyout } = useExpandableFlyoutApi();
+
   const history = useHistory();
   const [ruleTypeModalVisibility, setRuleTypeModalVisibility] = useState<boolean>(false);
   const [stateRefresh, setRefresh] = useState(new Date());
@@ -155,6 +169,49 @@ export function RulesPage({ activeTab = RULES_TAB_NAME }: RulesPageProps) {
     </EuiButtonEmpty>,
   ];
 
+  const myPanels = [
+    {
+      key: 'demoRight',
+      component: () => (
+        <>
+          <EuiFlyoutHeader>
+            <EuiTitle size="m">
+              <h1>{'Right panel header'}</h1>
+            </EuiTitle>
+          </EuiFlyoutHeader>
+          <EuiFlyoutBody>
+            <p>{'Example of a right component body'}</p>
+          </EuiFlyoutBody>
+          <EuiFlyoutFooter>
+            <EuiFlexGroup justifyContent="flexEnd">
+              <EuiFlexItem grow={false}>
+                <EuiButton data-test-subj="o11yMyPanelsButton" color="primary">
+                  {'Footer button'}
+                </EuiButton>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlyoutFooter>
+        </>
+      ),
+    },
+    {
+      key: 'demoLeft',
+      component: () => (
+        <EuiPanel hasShadow={false}>
+          <EuiFlexGroup direction="column">
+            <EuiFlexItem grow={false}>
+              <EuiTitle size="m">
+                <h1>{'Left panel header'}</h1>
+              </EuiTitle>
+            </EuiFlexItem>
+            <p>{'Example of a left component content'}</p>
+            <EuiFlexItem grow={false} />
+          </EuiFlexGroup>
+        </EuiPanel>
+      ),
+    },
+  ];
+
   return (
     <ObservabilityPageTemplate
       pageHeader={{
@@ -166,11 +223,21 @@ export function RulesPage({ activeTab = RULES_TAB_NAME }: RulesPageProps) {
       }}
       data-test-subj="rulesPage"
     >
+      <ExpandableFlyoutProvider urlKey={'flyout'}>
+        <ObservabilitySolutionFlyout />
+        {/* <ExpandableFlyout registeredPanels={myPanels} /> */}
+      </ExpandableFlyoutProvider>
+
       <HeaderMenu />
       <EuiFlexGroup direction="column" gutterSize="s">
         <EuiFlexItem>
           {activeTab === RULES_TAB_NAME ? (
-            <RulesTab setRefresh={setRefresh} stateRefresh={stateRefresh} />
+            <RulesTab
+              openFlyout={openFlyout}
+              registeredPanels={myPanels}
+              setRefresh={setRefresh}
+              stateRefresh={stateRefresh}
+            />
           ) : (
             <GlobalLogsTab />
           )}

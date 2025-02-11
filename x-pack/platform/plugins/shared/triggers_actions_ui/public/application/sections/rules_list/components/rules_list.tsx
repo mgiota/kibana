@@ -14,6 +14,12 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { toMountPoint } from '@kbn/react-kibana-mount';
 import { parseRuleCircuitBreakerErrorMessage } from '@kbn/alerting-plugin/common';
 import { RuleTypeModal } from '@kbn/response-ops-rule-form';
+import {
+  ExpandableFlyout,
+  ExpandableFlyoutProvider,
+  useExpandableFlyoutApi,
+} from '@kbn/expandable-flyout';
+
 import React, {
   lazy,
   useEffect,
@@ -31,6 +37,14 @@ import {
   EuiButtonIcon,
   EuiSelectableOption,
   EuiDescriptionList,
+  EuiPanel,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiTitle,
+  EuiFlyoutHeader,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiButton,
 } from '@elastic/eui';
 import { EuiSelectableOptionCheckedType } from '@elastic/eui/src/components/selectable/selectable_option';
 import { useHistory } from 'react-router-dom';
@@ -117,6 +131,7 @@ const RuleAdd = lazy(() => import('../../rule_form/rule_add'));
 const RuleEdit = lazy(() => import('../../rule_form/rule_edit'));
 
 export interface RulesListProps {
+  registeredPanels: any;
   ruleTypeIds?: string[];
   consumers?: string[];
   filteredRuleTypes?: string[];
@@ -160,6 +175,8 @@ const initialPercentileOptions = Object.values(Percentiles).map((percentile) => 
 const EMPTY_ARRAY: string[] = [];
 
 export const RulesList = ({
+  openFlyout,
+  registeredPanels,
   ruleTypeIds,
   consumers,
   filteredRuleTypes = EMPTY_ARRAY,
@@ -198,6 +215,49 @@ export const RulesList = ({
     ruleTypeRegistry,
     ...startServices
   } = kibanaServices;
+  // const { openFlyout } = useExpandableFlyoutApi();
+  // const myPanels = [
+  //   {
+  //     key: 'demoRight',
+  //     component: () => (
+  //       <>
+  //         <EuiFlyoutHeader>
+  //           <EuiTitle size="m">
+  //             <h1>{'Right panel header'}</h1>
+  //           </EuiTitle>
+  //         </EuiFlyoutHeader>
+  //         <EuiFlyoutBody>
+  //           <p>{'Example of a right component body'}</p>
+  //         </EuiFlyoutBody>
+  //         <EuiFlyoutFooter>
+  //           <EuiFlexGroup justifyContent="flexEnd">
+  //             <EuiFlexItem grow={false}>
+  //               <EuiButton data-test-subj="o11yMyPanelsButton" color="primary">
+  //                 {'Footer button'}
+  //               </EuiButton>
+  //             </EuiFlexItem>
+  //           </EuiFlexGroup>
+  //         </EuiFlyoutFooter>
+  //       </>
+  //     ),
+  //   },
+  //   {
+  //     key: 'demoLeft',
+  //     component: () => (
+  //       <EuiPanel hasShadow={false}>
+  //         <EuiFlexGroup direction="column">
+  //           <EuiFlexItem grow={false}>
+  //             <EuiTitle size="m">
+  //               <h1>{'Left panel header'}</h1>
+  //             </EuiTitle>
+  //           </EuiFlexItem>
+  //           <p>{'Example of a left component content'}</p>
+  //           <EuiFlexItem grow={false} />
+  //         </EuiFlexGroup>
+  //       </EuiPanel>
+  //     ),
+  //   },
+  // ];
 
   const canExecuteActions = hasExecuteActionsCapability(capabilities);
   const [isPerformingAction, setIsPerformingAction] = useState<boolean>(false);
@@ -330,7 +390,14 @@ export const RulesList = ({
         },
       });
     } else {
-      setEditFlyoutVisibility(true);
+      // setEditFlyoutVisibility(true);
+      // TODO call openFlyout passing the right panel
+      openFlyout({
+        right: {
+          id: 'rule-details-right',
+          params: {},
+        },
+      });
       setCurrentRuleToEdit(ruleItem);
     }
   };
@@ -776,6 +843,9 @@ export const RulesList = ({
 
   return (
     <>
+      {/* <ExpandableFlyoutProvider urlKey={'flyout'}>
+        <ExpandableFlyout registeredPanels={registeredPanels} />
+      </ExpandableFlyoutProvider> */}
       {showSearchBar && !isEmpty(filters.ruleParams) ? (
         <RulesListClearRuleFilterBanner onClickClearFilter={handleClearRuleParamFilter} />
       ) : null}

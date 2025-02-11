@@ -45,7 +45,9 @@
       "logsExplorer",
       "logsShared",
       "licensing",
-      "navigation"
+      "navigation",
+      "savedObjects",
+      "savedObjectsFinder",
     ],
     "optionalPlugins": [
       "discover",

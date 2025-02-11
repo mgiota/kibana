@@ -53,10 +53,15 @@ ExpandableFlyoutContextProvider.displayName = 'ExpandableFlyoutContextProvider';
 
 export const useExpandableFlyoutContext = () => {
   const context = useContext(ExpandableFlyoutContext);
-  if (context === undefined) {
-    throw new Error(
-      'ExpandableFlyoutContext can only be used within ExpandableFlyoutContext provider'
-    );
-  }
-  return context;
+  console.log(ExpandableFlyoutContext, '!!ExpandableFlyoutContext');
+  console.log(context, '!!context');
+  // if (context === undefined) {
+  //   throw new Error(
+  //     'ExpandableFlyoutContext can only be used within ExpandableFlyoutContext provider'
+  //   );
+  // }
+  // return context;
+  return {
+    urlKey: 'flyout',
+  };
 };
