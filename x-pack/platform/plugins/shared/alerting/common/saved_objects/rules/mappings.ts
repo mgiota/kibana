@@ -313,5 +313,15 @@ export const alertMappings: SavedObjectsTypeMappingDefinition = {
     running: {
       type: 'boolean',
     },
+    // dashboards: {
+    //   properties: {
+    //     id: {
+    //       type: 'keyword',
+    //     },
+    //     title: {
+    //       type: 'keyword',
+    //     },
+    //   },
+    // },
   },
 };

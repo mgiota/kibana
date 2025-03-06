@@ -186,6 +186,7 @@ export const createBodySchema = schema.object({
   notify_when: schema.maybe(schema.nullable(notifyWhenSchemaV1)),
   alert_delay: schema.maybe(alertDelaySchemaV1),
   flapping: schema.maybe(schema.nullable(flappingSchemaV1)),
+  dashboards: schema.maybe(schema.arrayOf(schema.string(), { defaultValue: [] })),
 });
 
 export const createParamsSchema = schema.object({

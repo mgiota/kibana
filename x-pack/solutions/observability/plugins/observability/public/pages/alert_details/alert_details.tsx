@@ -268,7 +268,7 @@ export function AlertDetails() {
       <AlertFieldsTable alert={alertDetail.raw} />
     </EuiPanel>
   );
-
+  console.log('!!rule', rule);
   const tabs: EuiTabbedContentTab[] = [
     {
       id: OVERVIEW_TAB_ID,
@@ -306,7 +306,7 @@ export function AlertDetails() {
       name: i18n.translate('xpack.observability.alertDetails.tab.relatedDashboardsLabel', {
         defaultMessage: 'Related dashboards',
       }),
-      content: <RelatedDashboards />,
+      content: <RelatedDashboards linkedDeshboards={rule?.dashboards} />,
       append: (
         <EuiNotificationBadge className="eui-alignCenter" size="m">
           {0}

@@ -639,6 +639,7 @@ export const ruleResponseSchema = schema.object({
   ),
   alert_delay: schema.maybe(alertDelaySchema),
   flapping: schema.maybe(schema.nullable(flappingSchemaV1)),
+  dashboards: schema.maybe(schema.arrayOf(schema.string())),
 });
 
 export const scheduleIdsSchema = schema.maybe(schema.arrayOf(schema.string()));
