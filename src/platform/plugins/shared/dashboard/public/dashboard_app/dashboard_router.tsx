@@ -17,10 +17,10 @@ import React from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 import type { RouteComponentProps } from 'react-router-dom';
 import { HashRouter, Redirect } from 'react-router-dom';
-
+import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { DASHBOARD_APP_ID, LANDING_PAGE_PATH } from '../../common/constants';
 import type { RedirectToProps } from './types';
-import { coreServices, dataService, embeddableService } from '../services/kibana_services';
+import { coreServices, dataService, embeddableService, casesService } from '../services/kibana_services';
 import { getDashboardCapabilities } from '../utils/get_dashboard_capabilities';
 import { dashboardReadonlyBadge, getDashboardPageTitle } from './_dashboard_app_strings';
 import { DashboardApp } from './dashboard_app';
@@ -55,6 +55,10 @@ export async function mountApp({
   appUnMounted,
   mountContext,
 }: DashboardMountProps) {
+  //   const getCasesContext = casesService?.ui?.getCasesContext;
+
+  const CasesContext = casesService.ui.getCasesContext();
+  const userCasesPermissions = casesService.helpers.canUseCases(['observability']);
   let globalEmbedSettings: DashboardEmbedSettings | undefined;
 
   const getUrlStateStorage = (history: RouteComponentProps['history']) =>
@@ -101,14 +105,16 @@ export async function mountApp({
       globalEmbedSettings = getDashboardEmbedSettings(routeParams);
     }
     return (
-      <DashboardApp
-        key={routeProps.match.params.id ?? 'newDashboard'}
-        history={routeProps.history}
-        embedSettings={globalEmbedSettings}
-        savedDashboardId={routeProps.match.params.id}
-        redirectTo={redirect}
-        expandedPanelId={routeProps.match.params.expandedPanelId}
-      />
+      <CasesContext owner={['observability']} permissions={userCasesPermissions}>
+        <DashboardApp
+          key={routeProps.match.params.id ?? 'newDashboard'}
+          history={routeProps.history}
+          embedSettings={globalEmbedSettings}
+          savedDashboardId={routeProps.match.params.id}
+          redirectTo={redirect}
+          expandedPanelId={routeProps.match.params.expandedPanelId}
+        />
+      </CasesContext>
     );
   };
 
@@ -145,27 +151,35 @@ export async function mountApp({
   });
 
   const app = (
-    <KibanaRenderContextProvider {...coreStart}>
-      <DashboardMountContext.Provider value={mountContext}>
-        <HashRouter>
-          <Routes>
-            <Route
-              path={[
-                CREATE_NEW_DASHBOARD_URL,
-                `${VIEW_DASHBOARD_URL}/:id/:expandedPanelId`,
-                `${VIEW_DASHBOARD_URL}/:id`,
-              ]}
-              render={renderDashboard}
-            />
-            <Route exact path={LANDING_PAGE_PATH} render={renderListingPage} />
-            <Route exact path="/">
-              <Redirect to={LANDING_PAGE_PATH} />
-            </Route>
-            <Route render={renderNoMatch} />
-          </Routes>
-        </HashRouter>
-      </DashboardMountContext.Provider>
-    </KibanaRenderContextProvider>
+    <CasesContext owner={['observability']} permissions={userCasesPermissions}>
+      <KibanaRenderContextProvider {...coreStart}>
+        <KibanaContextProvider
+          services={{
+            ...coreStart,
+          }}
+        >
+          <DashboardMountContext.Provider value={mountContext}>
+            <HashRouter>
+              <Routes>
+                <Route
+                  path={[
+                    CREATE_NEW_DASHBOARD_URL,
+                    `${VIEW_DASHBOARD_URL}/:id/:expandedPanelId`,
+                    `${VIEW_DASHBOARD_URL}/:id`,
+                  ]}
+                  render={renderDashboard}
+                />
+                <Route exact path={LANDING_PAGE_PATH} render={renderListingPage} />
+                <Route exact path="/">
+                  <Redirect to={LANDING_PAGE_PATH} />
+                </Route>
+                <Route render={renderNoMatch} />
+              </Routes>
+            </HashRouter>
+          </DashboardMountContext.Provider>
+        </KibanaContextProvider>
+      </KibanaRenderContextProvider>
+    </CasesContext>
   );
 
   coreServices.chrome.setHelpExtension({

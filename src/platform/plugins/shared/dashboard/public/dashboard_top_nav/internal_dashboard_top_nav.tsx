@@ -55,6 +55,7 @@ import {
 import { getDashboardCapabilities } from '../utils/get_dashboard_capabilities';
 import { getFullEditPath } from '../utils/urls';
 import { DashboardFavoriteButton } from './dashboard_favorite_button';
+import { AddToCaseModal } from '../dashboard_app/top_nav/add_to_case/add_to_case_modal';
 
 export interface InternalDashboardTopNavProps {
   customLeadingBreadCrumbs?: EuiBreadcrumb[];
@@ -79,6 +80,8 @@ export function InternalDashboardTopNav({
 }: InternalDashboardTopNavProps) {
   const [isChromeVisible, setIsChromeVisible] = useState(false);
   const [isLabsShown, setIsLabsShown] = useState(false);
+  const [isAddToCaseModalOpen, setIsAddToCaseModalOpen] = useState(false);
+
   const dashboardTitleRef = useRef<HTMLHeadingElement>(null);
 
   const isLabsEnabled = useMemo(() => coreServices.uiSettings.get(UI_SETTINGS.ENABLE_LABS_UI), []);
@@ -267,9 +270,9 @@ export function InternalDashboardTopNav({
     setIsLabsShown,
     maybeRedirect,
     showResetChange,
+    isAddToCaseModalOpen,
+    setIsAddToCaseModalOpen,
   });
-
-  console.log(editModeTopNavConfig, '!!editModeTopNavConfig')
 
   UseUnmount(() => {
     dashboardApi.clearOverlays();
@@ -394,6 +397,7 @@ export function InternalDashboardTopNav({
       ) : null}
       {viewMode === 'edit' ? <DashboardEditingToolbar isDisabled={!!focusedPanelId} /> : null}
       {showBorderBottom && <EuiHorizontalRule margin="none" />}
+      {isAddToCaseModalOpen && <AddToCaseModal />}
       <MountPointPortal setMountPoint={setFavoriteButtonMountPoint}>
         <DashboardFavoriteButton dashboardId={lastSavedId} />
       </MountPointPortal>

@@ -61,7 +61,8 @@ import type {
   UsageCollectionSetup,
   UsageCollectionStart,
 } from '@kbn/usage-collection-plugin/public';
-
+import type { CasesPublicStart } from '@kbn/cases-plugin/public';
+import type { NotificationsStart } from '@kbn/core-notifications-browser';
 import { CONTENT_ID, LATEST_VERSION } from '../common/content_management';
 import { DashboardAppLocatorDefinition } from '../common/locator/locator';
 import type { DashboardMountContextProps } from './dashboard_app/types';
@@ -112,6 +113,8 @@ export interface DashboardStartDependencies {
   noDataPage?: NoDataPagePluginStart;
   lens?: LensPublicStart;
   observabilityAIAssistant?: ObservabilityAIAssistantPublicStart;
+  cases: CasesPublicStart;
+  notifications: NotificationsStart;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

@@ -24,22 +24,26 @@ import { coreServices, shareService } from '../../services/kibana_services';
 import { getDashboardCapabilities } from '../../utils/get_dashboard_capabilities';
 import { topNavStrings } from '../_dashboard_app_strings';
 import { ShowShareModal } from './share/show_share_modal';
+import { AddToCaseModal } from './add_to_case/add_to_case_modal';
 
 export const useDashboardMenuItems = ({
   isLabsShown,
   setIsLabsShown,
   maybeRedirect,
   showResetChange,
+  isAddToCaseModalOpen,
+  setIsAddToCaseModalOpen,
 }: {
   isLabsShown: boolean;
   setIsLabsShown: Dispatch<SetStateAction<boolean>>;
   maybeRedirect: (result?: SaveDashboardReturn) => void;
   showResetChange?: boolean;
+  isAddToCaseModalOpen: boolean;
+  setIsAddToCaseModalOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const isMounted = useMountedState();
 
   const [isSaveInProgress, setIsSaveInProgress] = useState(false);
-
   const dashboardApi = useDashboardApi();
 
   const [dashboardTitle, hasOverlays, hasUnsavedChanges, lastSavedId, viewMode] =
@@ -51,6 +55,15 @@ export const useDashboardMenuItems = ({
       dashboardApi.viewMode$
     );
   const disableTopNav = isSaveInProgress || hasOverlays;
+
+  /**
+   * Show the Dashboard app's "Add to case" menu
+   */
+  // const showAddToCase = useCallback((anchorElement: HTMLElement) => {
+  //   // alert('aaa')
+  //   // AddToCaseModal();
+  //   setIsAddToCaseModalOpen(true);
+  // }, []);
 
   /**
    * Show the Dashboard app's share menu
@@ -230,7 +243,8 @@ export const useDashboardMenuItems = ({
         id: 'add-to-case',
         testId: 'dashboardAddToCaseMenuItem',
         disableButton: disableTopNav,
-        run: () => openAddToCaseFlyout(),
+        // run: showAddToCase,
+        run: () => setIsAddToCaseModalOpen(!isAddToCaseModalOpen),
       } as TopNavMenuData,
     };
   }, [
@@ -240,14 +254,15 @@ export const useDashboardMenuItems = ({
     lastSavedId,
     dashboardInteractiveSave,
     viewMode,
+    isResetting,
     showShare,
-    openAddToCaseFlyout,
     dashboardApi,
     setIsLabsShown,
     isLabsShown,
     quickSaveDashboard,
     resetChanges,
-    isResetting,
+    setIsAddToCaseModalOpen,
+    isAddToCaseModalOpen,
   ]);
 
   const resetChangesMenuItem = useMemo(() => {
