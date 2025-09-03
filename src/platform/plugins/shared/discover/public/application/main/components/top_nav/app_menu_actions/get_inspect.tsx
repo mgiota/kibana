@@ -21,7 +21,7 @@ export const getInspectAppMenuItem = ({
     type: AppMenuActionType.secondary,
     controlProps: {
       label: i18n.translate('discover.localMenu.inspectTitle', {
-        defaultMessage: 'Inspect',
+        defaultMessage: 'OOOOOOOOO',
       }),
       description: i18n.translate('discover.localMenu.openInspectorForSearchDescription', {
         defaultMessage: 'Open Inspector for search',

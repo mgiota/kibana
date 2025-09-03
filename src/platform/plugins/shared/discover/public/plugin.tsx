@@ -25,6 +25,7 @@ import { SavedSearchType } from '@kbn/saved-search-plugin/common';
 import type { SavedSearchAttributes } from '@kbn/saved-search-plugin/common';
 import { i18n } from '@kbn/i18n';
 import { once } from 'lodash';
+import { generateAttachmentType } from '@kbn/discover-sessions-case-attachment';
 import { DISCOVER_ESQL_LOCATOR } from '@kbn/deeplinks-analytics';
 import { DISCOVER_APP_LOCATOR, PLUGIN_ID, type DiscoverAppLocator } from '../common';
 import {
@@ -229,6 +230,7 @@ export class DiscoverPlugin
 
     forwardLegacyUrls(plugins.urlForwarding);
     this.registerEmbeddable(core, plugins);
+    plugins.cases.attachmentFramework.registerPersistableState(generateAttachmentType());
 
     return { locator: this.locator };
   }

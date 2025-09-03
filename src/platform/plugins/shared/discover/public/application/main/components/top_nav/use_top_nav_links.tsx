@@ -203,10 +203,10 @@ export const useTopNavLinks = ({
         id: 'esql',
         label: isEsqlMode
           ? i18n.translate('discover.localMenu.switchToClassicTitle', {
-              defaultMessage: 'Switch to classic',
+              defaultMessage: 'NOOOOOO',
             })
           : i18n.translate('discover.localMenu.tryESQLTitle', {
-              defaultMessage: 'Try ES|QL',
+              defaultMessage: 'AAAAALALALALLA',
             }),
         emphasize: true,
         fill: false,
