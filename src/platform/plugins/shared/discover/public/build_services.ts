@@ -67,6 +67,7 @@ import type { DiscoverSharedPublicStart } from '@kbn/discover-shared-plugin/publ
 import type { EmbeddableEnhancedPluginStart } from '@kbn/embeddable-enhanced-plugin/public';
 import type { MetricsExperiencePluginStart } from '@kbn/metrics-experience-plugin/public';
 import type { CasesPublicStart } from '@kbn/cases-plugin/public';
+import type { SecurityPluginStart } from '@kbn/security-plugin/public';
 import type { DiscoverStartPlugins } from './types';
 import type { DiscoverContextAppLocator } from './application/context/services/locator';
 import type { DiscoverSingleDocLocator } from './application/doc/locator';
@@ -150,6 +151,7 @@ export interface DiscoverServices {
   apmSourcesAccess?: ApmSourceAccessPluginStart;
   metricsExperience?: MetricsExperiencePluginStart;
   cases?: CasesPublicStart;
+  security?: SecurityPluginStart;
 }
 
 export const buildServices = ({
@@ -247,5 +249,6 @@ export const buildServices = ({
     apmSourcesAccess: plugins.apmSourcesAccess,
     metricsExperience: plugins.metricsExperience,
     cases: plugins.cases,
+    security: plugins.security,
   };
 };

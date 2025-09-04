@@ -32,7 +32,8 @@
       "unifiedDocViewer",
       "unifiedSearch",
       "contentManagement",
-      "cases"
+      "cases",
+      "security",
     ],
     "optionalPlugins": [
       "dataVisualizer",
