@@ -30,7 +30,6 @@ export const getAddToCaseAppMenuItem = ({
       }),
       testId: 'addToCaseButton',
       onClick: async () => {
-        alert('click add to case');
         onOpenAddToCase();
       },
     },
