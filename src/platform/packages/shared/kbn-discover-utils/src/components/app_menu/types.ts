@@ -43,6 +43,7 @@ export enum AppMenuActionId {
   inspect = 'inspect',
   createRule = 'createRule',
   manageRulesAndConnectors = 'manageRulesAndConnectors',
+  addToCase = 'addToCase',
 }
 
 export enum AppMenuActionType {

@@ -31,7 +31,8 @@
       "expressions",
       "unifiedDocViewer",
       "unifiedSearch",
-      "contentManagement"
+      "contentManagement",
+      "cases"
     ],
     "optionalPlugins": [
       "dataVisualizer",
