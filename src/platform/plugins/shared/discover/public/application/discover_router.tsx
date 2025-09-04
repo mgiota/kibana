@@ -28,12 +28,18 @@ export interface DiscoverRouterProps {
 }
 
 export const DiscoverRouter = ({ services, ...routeProps }: DiscoverRouterProps) => {
+  const { cases } = services;
+  const getCasesContext = cases?.ui?.getCasesContext;
+  const CasesContext = getCasesContext ? getCasesContext() : React.Fragment;
+  const casesPermissions = cases?.helpers.canUseCases();
   return (
     <KibanaContextProvider services={services}>
       <EuiErrorBoundary>
-        <Router history={services.history} data-test-subj="discover-react-router">
-          <DiscoverRoutes {...routeProps} />
-        </Router>
+        <CasesContext owner={[]} permissions={casesPermissions}>
+          <Router history={services.history} data-test-subj="discover-react-router">
+            <DiscoverRoutes {...routeProps} />
+          </Router>
+        </CasesContext>
       </EuiErrorBoundary>
     </KibanaContextProvider>
   );

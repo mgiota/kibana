@@ -56,7 +56,11 @@ export const useDiscoverTopNav = ({
     stateContainer,
   });
   const hasShareIntegration = useHasShareIntegration(services);
-
+  const useCasesAddToExistingCaseModal = services.cases?.hooks?.useCasesAddToExistingCaseModal!;
+  const casesModal = useCasesAddToExistingCaseModal();
+  const onOpenAddToCase = () => {
+    casesModal.open();
+  };
   const topNavMenu = useTopNavLinks({
     dataView,
     services,
@@ -67,6 +71,7 @@ export const useDiscoverTopNav = ({
     topNavCustomization,
     shouldShowESQLToDataViewTransitionModal,
     hasShareIntegration,
+    onOpenAddToCase,
   });
 
   return {

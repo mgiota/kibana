@@ -60,6 +60,7 @@ export const useTopNavLinks = ({
   topNavCustomization,
   shouldShowESQLToDataViewTransitionModal,
   hasShareIntegration,
+  onOpenAddToCase,
 }: {
   dataView: DataView | undefined;
   services: DiscoverServices;
@@ -70,6 +71,7 @@ export const useTopNavLinks = ({
   topNavCustomization: TopNavCustomization | undefined;
   shouldShowESQLToDataViewTransitionModal: boolean;
   hasShareIntegration: boolean;
+  onOpenAddToCase: () => void;
 }): TopNavMenuData[] => {
   const dispatch = useInternalStateDispatch();
   const currentDataView = useCurrentDataView();
@@ -166,15 +168,20 @@ export const useTopNavLinks = ({
         items.push(...shareAppMenuItem);
       }
 
-      const addToCaseAppMenuItem = getAddToCaseAppMenuItem({ services });
+      const addToCaseAppMenuItem = getAddToCaseAppMenuItem({ onOpenAddToCase });
       items.push(addToCaseAppMenuItem);
 
       return items;
     }, [
-      defaultMenu,
+      defaultMenu?.inspectItem?.disabled,
+      defaultMenu?.alertsItem?.disabled,
+      defaultMenu?.newItem?.disabled,
+      defaultMenu?.openItem?.disabled,
+      defaultMenu?.shareItem?.disabled,
       services,
-      onOpenInspector,
       discoverParams,
+      onOpenAddToCase,
+      onOpenInspector,
       state,
       isEsqlMode,
       currentDataView,
@@ -198,7 +205,6 @@ export const useTopNavLinks = ({
         services,
       })
     );
-
     if (services.uiSettings.get(ENABLE_ESQL)) {
       /**
        * Switches from ES|QL to classic mode and vice versa
