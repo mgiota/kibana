@@ -35,11 +35,11 @@ export const DiscoverRouter = ({ services, ...routeProps }: DiscoverRouterProps)
   return (
     <KibanaContextProvider services={services}>
       <EuiErrorBoundary>
-        <CasesContext owner={[]} permissions={casesPermissions}>
-          <Router history={services.history} data-test-subj="discover-react-router">
+        <Router history={services.history} data-test-subj="discover-react-router">
+          <CasesContext owner={[]} permissions={casesPermissions}>
             <DiscoverRoutes {...routeProps} />
-          </Router>
-        </CasesContext>
+          </CasesContext>
+        </Router>
       </EuiErrorBoundary>
     </KibanaContextProvider>
   );
