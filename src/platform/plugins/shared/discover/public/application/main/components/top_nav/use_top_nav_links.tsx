@@ -34,6 +34,7 @@ import {
   getOpenSearchAppMenuItem,
   getShareAppMenuItem,
   getInspectAppMenuItem,
+  getAddToCaseAppMenuItem,
   convertAppMenuItemToTopNavItem,
 } from './app_menu_actions';
 import type { TopNavCustomization } from '../../../../customizations';
@@ -164,6 +165,9 @@ export const useTopNavLinks = ({
         });
         items.push(...shareAppMenuItem);
       }
+
+      const addToCaseAppMenuItem = getAddToCaseAppMenuItem({ services });
+      items.push(addToCaseAppMenuItem);
 
       return items;
     }, [
