@@ -12,9 +12,9 @@ import type { AppMenuActionSecondary } from '@kbn/discover-utils';
 import type { DiscoverServices } from '../../../../../build_services';
 
 export const getAddToCaseAppMenuItem = ({
-  services,
+  onOpenAddToCase,
 }: {
-  services: DiscoverServices;
+  onOpenAddToCase: () => void;
 }): AppMenuActionSecondary => {
   // const { cases } = services;
 
@@ -29,8 +29,9 @@ export const getAddToCaseAppMenuItem = ({
         defaultMessage: 'Add the current selection to a case',
       }),
       testId: 'addToCaseButton',
-      onClick: () => {
+      onClick: async () => {
         alert('click add to case');
+        onOpenAddToCase();
       },
     },
   };
