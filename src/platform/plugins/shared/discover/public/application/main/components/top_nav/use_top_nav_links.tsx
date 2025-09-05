@@ -168,7 +168,7 @@ export const useTopNavLinks = ({
         items.push(...shareAppMenuItem);
       }
 
-      const addToCaseAppMenuItem = getAddToCaseAppMenuItem({ onOpenAddToCase });
+      const addToCaseAppMenuItem = getAddToCaseAppMenuItem({ discoverParams, onOpenAddToCase });
       items.push(addToCaseAppMenuItem);
 
       return items;

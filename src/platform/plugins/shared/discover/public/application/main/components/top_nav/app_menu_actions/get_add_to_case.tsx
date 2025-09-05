@@ -9,14 +9,19 @@
 import { i18n } from '@kbn/i18n';
 import { AppMenuActionId, AppMenuActionType } from '@kbn/discover-utils';
 import type { AppMenuActionSecondary } from '@kbn/discover-utils';
-import type { DiscoverServices } from '../../../../../build_services';
+import type { AppMenuDiscoverParams } from './types';
+// import type { DiscoverServices } from '../../../../../build_services';
 
 export const getAddToCaseAppMenuItem = ({
+  discoverParams,
   onOpenAddToCase,
 }: {
+  discoverParams: AppMenuDiscoverParams;
   onOpenAddToCase: () => void;
 }): AppMenuActionSecondary => {
   // const { cases } = services;
+  const { dataView } = discoverParams;
+  console.log('!!dataView', dataView);
 
   return {
     id: AppMenuActionId.addToCase,

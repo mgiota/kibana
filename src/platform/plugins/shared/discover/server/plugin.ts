@@ -9,12 +9,13 @@
 
 import type { CoreSetup, CoreStart, Plugin } from '@kbn/core/server';
 import type { PluginSetup as DataPluginSetup } from '@kbn/data-plugin/server';
+import type { CasesServerSetup } from '@kbn/cases-plugin/server';
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/server';
 import type { HomeServerPluginSetup } from '@kbn/home-plugin/server';
 import { setStateToKbnUrl } from '@kbn/kibana-utils-plugin/common';
 import type { SharePluginSetup } from '@kbn/share-plugin/server';
 import type { PluginInitializerContext } from '@kbn/core/server';
-import { SEARCH_EMBEDDABLE_TYPE } from '@kbn/discover-utils';
+import { SEARCH_EMBEDDABLE_TYPE, SAVED_SEARCH_ATTACHMENT_TYPE } from '@kbn/discover-utils';
 import type { DiscoverServerPluginStart, DiscoverServerPluginStartDeps } from '.';
 import { DISCOVER_APP_LOCATOR } from '../common';
 import { capabilitiesProvider } from './capabilities_provider';
@@ -46,6 +47,7 @@ export class DiscoverServerPlugin
       embeddable: EmbeddableSetup;
       home?: HomeServerPluginSetup;
       share?: SharePluginSetup;
+      cases?: CasesServerSetup;
     }
   ) {
     core.capabilities.registerProvider(capabilitiesProvider);
@@ -79,7 +81,9 @@ export class DiscoverServerPlugin
         products: [{ name: 'observability', tier: 'complete' }],
       },
     ]);
-
+    plugins.cases.attachmentFramework.registerPersistableState({
+      id: SAVED_SEARCH_ATTACHMENT_TYPE,
+    });
     return {};
   }
 
