@@ -141,8 +141,7 @@ export async function queryMonitorStatusAlert({
                 ...meta,
                 status: 'down',
               };
-            }
-            if (isValidPing && isLatestPingUp) {
+            } else if (isValidPing && isLatestPingUp) {
               upConfigs[`${configId}-${monLocationId}`] = {
                 ...meta,
                 status: 'up',

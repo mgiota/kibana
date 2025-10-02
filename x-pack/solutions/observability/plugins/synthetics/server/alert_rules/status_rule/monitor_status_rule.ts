@@ -98,6 +98,7 @@ export const registerSyntheticsStatusCheckRule = (
         pendingConfigs,
       });
 
+
       setRecoveredAlertsContext({
         alertsClient,
         basePath,
