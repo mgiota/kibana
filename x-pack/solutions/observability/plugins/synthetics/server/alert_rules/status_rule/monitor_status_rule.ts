@@ -90,6 +90,18 @@ export const registerSyntheticsStatusCheckRule = (
             ?.pendingConfigs as AlertOverviewStatus['pendingConfigs'],
         });
 
+      // const prevDownConfigs = ruleState.meta?.downConfigs as AlertOverviewStatus['downConfigs'];
+      // if (prevDownConfigs) {
+      //   for (const locId in prevDownConfigs) {
+      //     if (pendingConfigs[locId]) {
+      //       // This monitor was down, and is now pending.
+      //       // Let's treat it as still down to prevent recovery.
+      //       downConfigs[locId] = prevDownConfigs[locId];
+      //       delete pendingConfigs[locId];
+      //     }
+      //   }
+      // }
+
       statusRule.handleDownMonitorThresholdAlert({
         downConfigs,
       });
