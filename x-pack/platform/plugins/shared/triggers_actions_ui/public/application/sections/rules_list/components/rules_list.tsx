@@ -7,6 +7,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 
+import { mockedRulesData, ruleTypeFromApi } from './test_helper';
 import type { EuiSelectableOption, EuiTableSortingType } from '@elastic/eui';
 import { EuiButtonIcon, EuiDescriptionList, EuiPageTemplate, EuiSpacer } from '@elastic/eui';
 import type { EuiSelectableOptionCheckedType } from '@elastic/eui/src/components/selectable/selectable_option';
@@ -81,7 +82,6 @@ import { ToastWithCircuitBreakerContent } from '../../../components/toast_with_c
 import { useLoadActionTypesQuery } from '../../../hooks/use_load_action_types_query';
 import { useLoadConfigQuery } from '../../../hooks/use_load_config_query';
 import { useLoadRuleAggregationsQuery } from '../../../hooks/use_load_rule_aggregations_query';
-import { useLoadRulesQuery } from '../../../hooks/use_load_rules_query';
 
 import { RulesSettingsLink } from '../../../components/rules_setting/rules_settings_link';
 import { useBulkOperationToast } from '../../../hooks/use_bulk_operation_toast';
@@ -166,6 +166,16 @@ export const RulesList = ({
 }: RulesListProps) => {
   const history = useHistory();
   const kibanaServices = useKibana().services;
+  const {
+    actionTypeRegistry,
+    application: { capabilities, navigateToApp },
+    http,
+    kibanaFeatures,
+    notifications: { toasts },
+    ruleTypeRegistry,
+    ...startServices
+  } = kibanaServices;
+
   const {
     actionTypeRegistry,
     application: { capabilities, navigateToApp },

@@ -41,7 +41,10 @@ import {
 } from '@kbn/alerting-rule-utils';
 import { unflattenObject } from '@kbn/object-utils';
 import { ecsFieldMap } from '@kbn/rule-registry-plugin/common/assets/field_maps/ecs_field_map';
-import { decodeOrThrow } from '@kbn/io-ts-utils';
+import { formatErrors } from '@kbn/securitysolution-io-ts-utils';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { fold } from 'fp-ts/lib/Either';
+import { identity } from 'fp-ts/lib/function';
 import { getChartGroupNames } from '../../../../common/utils/get_chart_group_names';
 import type {
   RuleParams,
@@ -211,7 +214,15 @@ export const createLogThresholdExecutor =
     const [, { logsShared, logsDataAccess }] = await libs.getStartServices();
 
     try {
-      const validatedParams = decodeOrThrow(ruleParamsRT)(params);
+      const validatedParams = pipe(
+        ruleParamsRT.decode(params),
+        fold(
+          (errors) => {
+            throw new Error(formatErrors(errors).join(' | '));
+          },
+          identity
+        )
+      );
 
       const logSourcesService =
         logsDataAccess.services.logSourcesServiceFactory.getLogSourcesService(savedObjectsClient);

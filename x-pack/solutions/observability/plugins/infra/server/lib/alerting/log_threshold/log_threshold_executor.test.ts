@@ -7,6 +7,7 @@
 
 import type { LogThresholdAlertReporter } from './log_threshold_executor';
 import {
+  createLogThresholdExecutor,
   getGroupedESQuery,
   processUngroupedResults,
   processGroupByResults,
@@ -875,6 +876,36 @@ describe('Log threshold executor', () => {
         expect(alertReporterMock).toHaveBeenCalledTimes(2);
         expect(alertsClientMock.setAlertLimitReached).toHaveBeenCalledWith(false);
       });
+    });
+  });
+
+  describe('createLogThresholdExecutor', () => {
+    it('should throw a user-friendly error for invalid params', async () => {
+      const libs: any = {
+        getStartServices: () => [
+          {},
+          {
+            logsDataAccess: {
+              services: { logSourcesServiceFactory: { getLogSourcesService: () => {} } },
+            },
+            logsShared: {
+              logViews: {
+                getClient: () => ({ getResolvedLogView: () => ({ indices: [], timestampField: '' }) }),
+              },
+            },
+          },
+        ],
+      };
+      const options: any = {
+        services: { alertsClient: { getRecoveredAlerts: () => [] } },
+        params: {},
+        spaceId: 'default',
+        startedAt: new Date(),
+      };
+
+      await expect(createLogThresholdExecutor(libs)(options)).rejects.toThrowError(
+        'Invalid value "undefined" supplied to "logView"'
+      );
     });
   });
 });
