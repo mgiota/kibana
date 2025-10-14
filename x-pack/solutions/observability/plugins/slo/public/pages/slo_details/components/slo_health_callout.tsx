@@ -78,10 +78,7 @@ export function SloHealthCallout({ slo }: { slo: SLOWithSummaryResponse }) {
   const missingRollup = health.rollup === 'missing';
   const missingSummary = health.summary === 'missing';
 
-  const unhealthyRollupContent = `${rollupTransformId} (unhealthy)`;
-  const unhealthySummaryContent = `${summaryTransformId} (unhealthy)`;
-  const missingRollupContent = `${rollupTransformId} (missing)`;
-  const missingSummaryContent = `${summaryTransformId} (missing)`;
+  // content strings are built per-item below when mapping the transforms
 
   const count = [unhealthyRollup, unhealthySummary, missingRollup, missingSummary].filter(
     Boolean
@@ -108,42 +105,36 @@ export function SloHealthCallout({ slo }: { slo: SLOWithSummaryResponse }) {
             values={{ count, stateText }}
           />
           <ul>
-            {health.rollup === 'unhealthy' && !!rollupUrl && (
-              <li key={`${slo.id}-rollup-unhealthy`}>
-                <HealthCalloutContentWithCTA
-                  textSize="s"
-                  content={unhealthyRollupContent}
-                  url={rollupUrl}
-                  isMissing={false}
-                />
-              </li>
-            )}
-            {health.summary === 'unhealthy' && !!summaryUrl && (
-              <HealthCalloutContentWithCTA
-                textSize="s"
-                content={unhealthySummaryContent}
-                url={summaryUrl}
-                isMissing={false}
-              />
-            )}
-            {health.rollup === 'missing' && !!rollupUrl && (
-              <li key={`${slo.id}-rollup-missing`}>
-                <HealthCalloutContentWithCTA
-                  textSize="s"
-                  content={missingRollupContent}
-                  isMissing={true}
-                  handleReset={handleReset}
-                />
-              </li>
-            )}
-            {health.summary === 'missing' && !!summaryUrl && (
-              <HealthCalloutContentWithCTA
-                textSize="s"
-                content={missingSummaryContent}
-                isMissing={true}
-                handleReset={handleReset}
-              />
-            )}
+            {[
+              {
+                key: `${slo.id}-rollup`,
+                transformId: rollupTransformId,
+                state: health.rollup,
+                url: rollupUrl,
+              },
+              {
+                key: `${slo.id}-summary`,
+                transformId: summaryTransformId,
+                state: health.summary,
+                url: summaryUrl,
+              },
+            ]
+              .filter((t) => t.state !== 'healthy' && !!t.url)
+              .map((t) => {
+                const isMissing = t.state === 'missing';
+                const content = `${t.transformId} (${t.state})`;
+                return (
+                  <li key={t.key}>
+                    <HealthCalloutContentWithCTA
+                      textSize="s"
+                      content={content}
+                      url={isMissing ? undefined : t.url}
+                      isMissing={isMissing}
+                      handleReset={isMissing ? handleReset : undefined}
+                    />
+                  </li>
+                );
+              })}
           </ul>
         </EuiFlexItem>
       </EuiFlexGroup>
