@@ -13,7 +13,7 @@ import type {
 import type { IScopedClusterClient } from '@kbn/core/server';
 import type { FetchSLOHealthParams, FetchSLOHealthResponse } from '@kbn/slo-schema';
 import { fetchSLOHealthResponseSchema } from '@kbn/slo-schema';
-import { type Dictionary, groupBy, keyBy } from 'lodash';
+import { type Dictionary, groupBy } from 'lodash';
 import moment from 'moment';
 import {
   SUMMARY_DESTINATION_INDEX_PATTERN,
@@ -36,7 +36,6 @@ function getAfterKey(
   }
   return undefined;
 }
-
 export class GetSLOHealth {
   constructor(private scopedClusterClient: IScopedClusterClient) {}
 
@@ -121,22 +120,22 @@ export class GetSLOHealth {
       sloName: item.sloName,
     }));
 
-    let count = 0;
-    let i = 0;
-    let transformStats: Dictionary<TransformGetTransformStatsTransformStats> = {};
-
-    do {
-      const tempTransformStats = await this.getTransformStats(i);
-      transformStats = { ...transformStats, ...tempTransformStats.data };
-      count = tempTransformStats.count;
-      i += ES_PAGESIZE_LIMIT;
-    } while (i <= count);
-
-    const transformStatsById = await this.getTransformStats(0);
+    // previous pagination variables removed: we now fetch only required transforms
+    // Instead of fetching all transforms globally, compute the specific
+    // transform IDs we care about for the discovered SLOs and fetch stats
+    // only for those IDs in batches. This reduces cost and enables computing
+    // the first 10 unhealthy SLOs for the UI.
     const summaryDocsById = await this.getSummaryDocsById(filteredList);
 
+    const transformIds = filteredList.flatMap((item) => [
+      getSLOTransformId(item.sloId, item.sloRevision),
+      getSLOSummaryTransformId(item.sloId, item.sloRevision),
+    ]);
+
+    const transformStatsById = await this.getTransformStatsForIds(transformIds);
+
     const results = filteredList.map((item) => {
-      const health = computeHealth(transformStatsById.data, item);
+      const health = computeHealth(transformStatsById, item);
       const state = computeState(summaryDocsById, item);
 
       return {
@@ -157,12 +156,43 @@ export class GetSLOHealth {
       ? mappedResults.filter((item) => item.health.overall === params.statusFilter)
       : mappedResults;
 
+    // Compute first 10 unhealthy and total unhealthy for the UI callout.
+    const unhealthyAll = uniqueResults.filter((r) => r.health.overall !== 'healthy');
+    const firstUnhealthy = unhealthyAll.slice(0, 10);
+
     return fetchSLOHealthResponseSchema.encode({
       data: uniqueResults.slice(page * perPage, (page + 1) * perPage),
       page,
       perPage,
       total: uniqueResults.length,
+      meta: {
+        firstUnhealthy,
+        totalUnhealthy: unhealthyAll.length,
+      },
     });
+  }
+
+  private async getTransformStatsForIds(
+    ids: string[]
+  ): Promise<Dictionary<TransformGetTransformStatsTransformStats>> {
+    const batchSize = 100; // safe batch size for transform.getTransformStats
+    const result: Dictionary<TransformGetTransformStatsTransformStats> = {};
+
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      if (batch.length === 0) continue;
+
+      const resp = await this.scopedClusterClient.asSecondaryAuthUser.transform.getTransformStats(
+        { transform_id: batch.join(','), allow_no_match: true },
+        { ignore: [404] }
+      );
+
+      for (const t of resp.transforms ?? []) {
+        result[t.id] = t as TransformGetTransformStatsTransformStats;
+      }
+    }
+
+    return result;
   }
 
   private async getSummaryDocsById(
@@ -189,29 +219,6 @@ export class GetSLOHealth {
       (doc: EsSummaryDocument) => buildSummaryKey(doc.slo.id, doc.slo.instanceId)
     );
     return summaryDocsById;
-  }
-
-  private async getTransformStats(from: number = 0): Promise<{
-    data: Dictionary<TransformGetTransformStatsTransformStats>;
-    count: number;
-    from: number;
-  }> {
-    const transformStats =
-      await this.scopedClusterClient.asSecondaryAuthUser.transform.getTransformStats(
-        {
-          transform_id: 'slo-*',
-          allow_no_match: true,
-          size: ES_PAGESIZE_LIMIT,
-          from,
-        },
-        { ignore: [404] }
-      );
-
-    return {
-      data: keyBy(transformStats.transforms, (transform) => transform.id),
-      count: transformStats.count ?? 0,
-      from,
-    };
   }
 }
 

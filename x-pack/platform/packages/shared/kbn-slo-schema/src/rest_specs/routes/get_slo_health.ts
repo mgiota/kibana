@@ -22,12 +22,20 @@ const fetchSLOHealthDataSchema = t.array(
   })
 );
 
-const fetchSLOHealthResponseSchema = t.type({
-  data: fetchSLOHealthDataSchema,
-  total: t.number,
-  page: t.number,
-  perPage: t.number,
-});
+const fetchSLOHealthResponseSchema = t.intersection([
+  t.type({
+    data: fetchSLOHealthDataSchema,
+    total: t.number,
+    page: t.number,
+    perPage: t.number,
+  }),
+  t.partial({
+    meta: t.type({
+      firstUnhealthy: fetchSLOHealthDataSchema,
+      totalUnhealthy: t.number,
+    }),
+  }),
+]);
 
 const fetchSLOHealthParamsSchema = t.type({
   body: t.intersection([
