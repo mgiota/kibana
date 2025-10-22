@@ -108,6 +108,7 @@ export function useFetchSloGroups({
             ...(groupsFilter && { groupsFilter }),
             ...(kqlQuery && { kqlQuery }),
             ...(filters && { filters }),
+            // hideStale: true,
           },
         },
         signal,

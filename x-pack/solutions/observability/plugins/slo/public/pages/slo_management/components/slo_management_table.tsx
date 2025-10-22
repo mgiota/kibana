@@ -18,6 +18,7 @@ import {
   EuiFlexItem,
   EuiHealth,
   EuiLink,
+  EuiSelect,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -25,7 +26,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import type { SLODefinitionResponse } from '@kbn/slo-schema';
 import { ALL_VALUE } from '@kbn/slo-schema';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { sloPaths } from '../../../../common';
 import { SLO_MODEL_VERSION } from '../../../../common/constants';
 import { paths } from '../../../../common/locators/paths';
@@ -40,7 +41,7 @@ import { SloManagementSearchBar } from './slo_management_search_bar';
 
 export function SloManagementTable() {
   const { state, onStateChange } = useUrlSearchState();
-  const { search, page, perPage, tags, includeOutdatedOnly } = state;
+  const { search, page, perPage, tags, includeOutdatedOnly, stateFilter: urlStateFilter } = state;
   const {
     services: {
       http,
@@ -60,6 +61,13 @@ export function SloManagementTable() {
   const { tasks } = useBulkOperation();
 
   const [selectedItems, setSelectedItems] = useState<SLODefinitionResponse[]>([]);
+  const [stateFilter, setStateFilter] = useState<string>(urlStateFilter ?? 'all');
+
+  // Keep the local stateFilter in sync with the URL-state. If another component
+  // updates the URL (or the user navigates back/forward), reflect that here.
+  useEffect(() => {
+    setStateFilter(urlStateFilter ?? 'all');
+  }, [urlStateFilter]);
 
   const onSelectionChange = (items: SLODefinitionResponse[]) => {
     setSelectedItems(items);
@@ -267,6 +275,13 @@ export function SloManagementTable() {
     showPerPageOptions: true,
   };
 
+  const filteredCount = data
+    ? (data.results ?? []).filter((slo) => {
+        if (stateFilter === 'all') return true;
+        return stateFilter === 'running' ? slo.enabled : !slo.enabled;
+      }).length
+    : 0;
+
   return (
     <EuiPanel hasBorder={true}>
       <SloManagementSearchBar onRefresh={refetch} />
@@ -277,7 +292,7 @@ export function SloManagementTable() {
           {i18n.translate('xpack.slo.sloManagementTable.itemCount', {
             defaultMessage: 'Showing {count} of {total} SLOs',
             values: {
-              count: data?.results.length ?? 0,
+              count: filteredCount,
               total: data?.total ?? 0,
             },
           })}
@@ -287,6 +302,53 @@ export function SloManagementTable() {
       )}
 
       <EuiSpacer size="s" />
+      <EuiFlexGroup alignItems="center" gutterSize="s">
+        <EuiFlexItem grow={false} style={{ minWidth: 160 }}>
+          <EuiSelect
+            data-test-subj="sloStateFilter"
+            compressed
+            prepend={undefined}
+            value={stateFilter}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setStateFilter(newValue);
+              // Persist selection in the URL so the filter survives refresh / bookmarking
+              onStateChange({ ...state, stateFilter: newValue });
+            }}
+            options={[
+              {
+                value: 'all',
+                text: i18n.translate('xpack.slo.sloManagementTable.stateFilter.all', {
+                  defaultMessage: 'All',
+                }),
+              },
+              {
+                value: 'running',
+                text: i18n.translate('xpack.slo.sloManagementTable.stateFilter.running', {
+                  defaultMessage: 'Running',
+                }),
+              },
+              {
+                value: 'paused',
+                text: i18n.translate('xpack.slo.sloManagementTable.stateFilter.paused', {
+                  defaultMessage: 'Paused',
+                }),
+              },
+            ]}
+            aria-label={i18n.translate('xpack.slo.sloManagementTable.stateFilter.label', {
+              defaultMessage: 'Filter by state',
+            })}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false} style={{ minWidth: 280 }}>
+          <EuiText size="xs">
+            {i18n.translate('xpack.slo.sloManagementTable.stateFilter.hint', {
+              defaultMessage:
+                'This is a client-side filter that applies to the currently fetched page. For global filtering use the server-side State filter.',
+            })}
+          </EuiText>
+        </EuiFlexItem>
+      </EuiFlexGroup>
       <EuiBasicTable<SLODefinitionResponse>
         tableCaption={TABLE_CAPTION}
         error={
@@ -296,7 +358,10 @@ export function SloManagementTable() {
               })
             : undefined
         }
-        items={data?.results ?? []}
+        items={(data?.results ?? []).filter((slo) => {
+          if (stateFilter === 'all') return true;
+          return stateFilter === 'running' ? slo.enabled : !slo.enabled;
+        })}
         rowHeader="name"
         columns={columns}
         itemId="id"

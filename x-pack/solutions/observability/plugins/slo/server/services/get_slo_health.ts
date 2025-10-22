@@ -121,15 +121,31 @@ export class GetSLOHealth {
       sloName: item.sloName,
     }));
 
-    const summaryDocsById = await this.getSummaryDocsById(filteredList);
+    const BATCH_SIZE = 50;
+    const needed = (page + 1) * perPage; // collect enough results for requested pages
 
-    const results = await Promise.all(
-      filteredList.map(async (item) => {
+    const collected: Array<{
+      sloId: string;
+      sloName: string;
+      sloInstanceId: string;
+      sloRevision: number;
+      state: State;
+      health: { overall: HealthStatus; rollup: HealthStatus; summary: HealthStatus };
+    }> = [];
+
+    for (let i = 0; i < filteredList.length && collected.length < needed; i += BATCH_SIZE) {
+      const batch = filteredList.slice(i, i + BATCH_SIZE);
+
+      // fetch summary docs only for this batch
+      const summaryDocsById = await this.getSummaryDocsById(batch);
+
+      // process items sequentially within the batch to avoid too many concurrent ES calls
+      for (const item of batch) {
         const transformStatsById = await this.getTransformStatsForSLO(item);
         const health = computeHealth(transformStatsById, item);
         const state = computeState(summaryDocsById, item);
 
-        return {
+        const result = {
           sloId: item.sloId,
           sloName: item.sloName,
           sloInstanceId: item.sloInstanceId,
@@ -137,16 +153,26 @@ export class GetSLOHealth {
           state,
           health,
         };
-      })
-    );
+
+        // apply filters as we collect so we can early-stop
+        if (params.statusFilter && result.health.overall !== params.statusFilter) {
+          continue;
+        }
+        if (params.stateFilter && result.state !== params.stateFilter) {
+          continue;
+        }
+
+        collected.push(result);
+
+        if (collected.length >= needed) break;
+      }
+    }
 
     const mappedResults = Array.from(
-      new Map(results.map((item) => [`${item.sloId}-${item.sloRevision}`, item])).values()
+      new Map(collected.map((item) => [`${item.sloId}-${item.sloRevision}`, item])).values()
     );
 
-    const uniqueResults = params.statusFilter
-      ? mappedResults.filter((item) => item.health.overall === params.statusFilter)
-      : mappedResults;
+    const uniqueResults = mappedResults;
 
     return fetchSLOHealthResponseSchema.encode({
       data: uniqueResults.slice(page * perPage, (page + 1) * perPage),

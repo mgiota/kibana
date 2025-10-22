@@ -57,12 +57,42 @@ export class GetSLOStatsOverview {
               },
             },
           },
+          aggs: {
+            violated: {
+              filter: {
+                term: {
+                  status: 'VIOLATED',
+                },
+              },
+            },
+            healthy: {
+              filter: {
+                term: {
+                  status: 'HEALTHY',
+                },
+              },
+            },
+            degrading: {
+              filter: {
+                term: {
+                  status: 'DEGRADING',
+                },
+              },
+            },
+            noData: {
+              filter: {
+                term: {
+                  status: 'NO_DATA',
+                },
+              },
+            },
+          },
         },
         not_stale: {
           filter: {
             range: {
               summaryUpdatedAt: {
-                gte: `now-${settings.staleThresholdInHours}h`,
+                gte: `now-${settings.staleThresholdInHours}h-1m`,
               },
             },
           },
@@ -118,11 +148,14 @@ export class GetSLOStatsOverview {
 
     const aggs = response.aggregations;
 
+    console.log('SLO Stats Overview Aggs:', JSON.stringify(aggs, null, 2));
+
     return {
-      violated: aggs?.not_stale?.violated.doc_count ?? 0,
-      degrading: aggs?.not_stale?.degrading.doc_count ?? 0,
-      healthy: aggs?.not_stale?.healthy?.doc_count ?? 0,
-      noData: aggs?.not_stale?.noData.doc_count ?? 0,
+      // violated: aggs?.stale.violated.doc_count ?? 0 + aggs?.not_stale.violated.doc_count ?? 0,
+      violated: aggs?.not_stale.violated.doc_count ?? 0,
+      degrading: aggs?.not_stale.degrading.doc_count ?? 0,
+      healthy: aggs?.not_stale.healthy?.doc_count ?? 0,
+      noData: aggs?.not_stale.noData.doc_count ?? 0,
       stale: aggs?.stale.doc_count ?? 0,
       burnRateRules: rules.total,
       burnRateActiveAlerts: alerts.activeAlertCount,

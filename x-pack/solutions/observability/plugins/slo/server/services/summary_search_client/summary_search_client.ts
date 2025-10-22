@@ -203,7 +203,7 @@ function excludeStaleSummaryFilter(
           {
             range: {
               summaryUpdatedAt: {
-                gte: `now-${settings.staleThresholdInHours}h`,
+                gte: `now-${settings.staleThresholdInHours}h-2m`,
               },
             },
           },

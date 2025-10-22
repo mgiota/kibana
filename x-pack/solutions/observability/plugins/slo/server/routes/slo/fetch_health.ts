@@ -23,8 +23,31 @@ export const fetchSloHealthRoute = createSloServerRoute({
     await assertPlatinumLicense(plugins);
 
     const { scopedClusterClient } = await getScopedClients({ request, logger });
+    const { repository } = await getScopedClients({ request, logger });
+
+    // If the client requested paused state filter, find all disabled SLOs and
+    // pass their ids in the list so GetSLOHealth can compute only those.
+    let body = params.body;
+    if (body.stateFilter === 'paused') {
+      const perPage = 1000;
+      let page = 1;
+      let disabledIds: Array<{ sloId: string; sloInstanceId: string }> = [];
+      while (true) {
+        const pageResult = await repository.search('', { page, perPage }, { tags: [] });
+        const disabledOnPage = pageResult.results
+          .filter((slo) => slo.enabled === false)
+          .map((slo) => ({ sloId: slo.id, sloInstanceId: slo.instanceId ?? '*' }));
+        disabledIds = disabledIds.concat(disabledOnPage);
+        const fetched = pageResult.page * pageResult.perPage;
+        if (fetched >= pageResult.total) break;
+        page += 1;
+      }
+
+      body = { ...body, list: disabledIds };
+    }
+
     const getSLOHealth = new GetSLOHealth(scopedClusterClient);
 
-    return await getSLOHealth.execute(params.body);
+    return await getSLOHealth.execute(body);
   },
 });
