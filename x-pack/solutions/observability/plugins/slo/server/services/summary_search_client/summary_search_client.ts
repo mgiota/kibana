@@ -192,7 +192,30 @@ function excludeStaleSummaryFilter(
   kqlFilter: string,
   hideStale?: boolean
 ): estypes.QueryDslQueryContainer[] {
+  console.log(settings.staleThresholdInHours, '!!settings.staleThresholdInHours');
+  console.log(hideStale, '!!hideStale');
+
+  if (settings.staleThresholdInHours === 0) {
+    return [
+      {
+        bool: {
+          should: [
+            { term: { isTempDoc: true } },
+            {
+              range: {
+                summaryUpdatedAt: {
+                  gte: `now-${settings.staleThresholdInHours}h-1m`,
+                },
+              },
+            },
+          ],
+        },
+      },
+    ];
+  }
+
   if (kqlFilter.includes('summaryUpdatedAt') || !settings.staleThresholdInHours || !hideStale) {
+    console.log('!!lala');
     return [];
   }
   return [
@@ -203,7 +226,7 @@ function excludeStaleSummaryFilter(
           {
             range: {
               summaryUpdatedAt: {
-                gte: `now-${settings.staleThresholdInHours}h-2m`,
+                gte: `now-${settings.staleThresholdInHours}h`,
               },
             },
           },

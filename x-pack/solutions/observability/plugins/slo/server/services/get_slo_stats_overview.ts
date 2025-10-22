@@ -53,7 +53,7 @@ export class GetSLOStatsOverview {
           filter: {
             range: {
               summaryUpdatedAt: {
-                lt: `now-${settings.staleThresholdInHours}h`,
+                lt: `now-${settings.staleThresholdInHours}h-1m`,
               },
             },
           },

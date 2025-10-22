@@ -38,6 +38,26 @@ function excludeStaleSummaryFilter(
   kqlFilter: string,
   hideStale?: boolean
 ): estypes.QueryDslQueryContainer[] {
+
+    if (settings.staleThresholdInHours === 0) {
+    return [
+      {
+        bool: {
+          should: [
+            { term: { isTempDoc: true } },
+            {
+              range: {
+                summaryUpdatedAt: {
+                  gte: `now-${settings.staleThresholdInHours}h-1m`,
+                },
+              },
+            },
+          ],
+        },
+      },
+    ];
+  }
+
   if (kqlFilter.includes('summaryUpdatedAt') || !settings.staleThresholdInHours || !hideStale) {
     return [];
   }
