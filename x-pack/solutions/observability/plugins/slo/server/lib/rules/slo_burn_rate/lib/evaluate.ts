@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { i18n } from '@kbn/i18n';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { get } from 'lodash';
 import type { SearchResponse } from '@elastic/elasticsearch/lib/api/types';
@@ -15,12 +16,16 @@ import { SLI_DESTINATION_INDEX_PATTERN } from '../../../../../common/constants';
 import type { EvaluationAfterKey } from './build_query';
 import {
   buildQuery,
+  buildQuery2,
   generateAboveThresholdKey,
   generateBurnRateKey,
   generateWindowId,
+  getLongestLookbackDateRange,
   LONG_WINDOW,
   SHORT_WINDOW,
 } from './build_query';
+
+const NO_DATA_ALERT = 'NO_DATA_ALERT';
 
 export interface EvaluationWindowStats {
   doc_count: number;
@@ -102,12 +107,50 @@ async function queryAllResults(
   );
 }
 
+async function checkForData(
+  esClient: ElasticsearchClient,
+  slo: SLODefinition,
+  params: BurnRateRuleParams,
+  startedAt: Date
+) {
+  const longestDateRange = getLongestLookbackDateRange(startedAt, slo, params);
+  const results = await esClient.count({
+    index: SLI_DESTINATION_INDEX_PATTERN,
+    query: {
+      bool: {
+        filter: [
+          { term: { 'slo.id': slo.id } },
+          { term: { 'slo.revision': slo.revision } },
+          {
+            range: {
+              '@timestamp': {
+                gte: longestDateRange.from.toISOString(),
+                lt: longestDateRange.to.toISOString(),
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+  return results.count > 0;
+}
+
 export async function evaluate(
   esClient: ElasticsearchClient,
   slo: SLODefinition,
   params: BurnRateRuleParams,
   startedAt: Date
 ) {
+  const hasSLIData = await checkForData(esClient, slo, params, startedAt);
+  if (!hasSLIData) {
+    return [
+      {
+        shouldAlert: true,
+        reason: NO_DATA_ALERT,
+      },
+    ];
+  }
   const buckets = await queryAllResults(esClient, slo, params, startedAt);
   return transformBucketToResults(buckets, params);
 }

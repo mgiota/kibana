@@ -192,6 +192,29 @@ function buildGroupingAgg() {
   };
 }
 
+export function getLongestLookbackDateRange(
+  startedAt: Date,
+  slo: SLODefinition,
+  params: BurnRateRuleParams
+) {
+  const delayInSeconds = getDelayInSecondsFromSLO(slo);
+  const burnRateWindows = params.windows.map((winDef) => {
+    return {
+      ...winDef,
+      longDuration: new Duration(winDef.longWindow.value, toDurationUnit(winDef.longWindow.unit)),
+      shortDuration: new Duration(
+        winDef.shortWindow.value,
+        toDurationUnit(winDef.shortWindow.unit)
+      ),
+    };
+  });
+
+  const longestLookbackWindow = burnRateWindows.reduce((acc, winDef) => {
+    return winDef.longDuration.isShorterThan(acc.longDuration) ? acc : winDef;
+  }, burnRateWindows[0]);
+  return getLookbackDateRange(startedAt, longestLookbackWindow.longDuration, delayInSeconds);
+}
+
 export function buildQuery(
   startedAt: Date,
   slo: SLODefinition,

@@ -30,6 +30,7 @@ import {
   HIGH_PRIORITY_ACTION,
   LOW_PRIORITY_ACTION,
   MEDIUM_PRIORITY_ACTION,
+  NO_DATA_ACTION,
   SUPPRESSED_PRIORITY_ACTION,
 } from '../../../../common/constants';
 import {
@@ -40,7 +41,7 @@ import {
 } from '../../../../common/field_names/slo';
 import type { Duration, SLODefinition } from '../../../domain/models';
 import { KibanaSavedObjectsSLORepository } from '../../../services';
-import { evaluate } from './lib/evaluate';
+import { evaluate, NO_DATA_ALERT } from './lib/evaluate';
 import { evaluateDependencies } from './lib/evaluate_dependencies';
 import { shouldSuppressInstanceId } from './lib/should_suppress_instance_id';
 import { getSloSummary } from './lib/summary_repository';
@@ -135,6 +136,7 @@ export const getRuleExecutor = (basePath: IBasePath) =>
           shortWindowDuration,
           shortWindowBurnRate,
           window: windowDef,
+          reason: resultReason,
         } = result;
 
         const groupingsFlattened = flattenObject(groupings ?? {});
@@ -156,20 +158,25 @@ export const getRuleExecutor = (basePath: IBasePath) =>
 
           const sloSummary = await getSloSummary(esClient.asCurrentUser, slo, instanceId);
 
-          const reason = buildReason(
-            instanceId,
-            windowDef.actionGroup,
-            longWindowDuration,
-            longWindowBurnRate,
-            shortWindowDuration,
-            shortWindowBurnRate,
-            windowDef,
-            shouldSuppress
-          );
+          const reason =
+            resultReason === NO_DATA_ALERT
+              ? buildNoDataReason(slo.name)
+              : buildReason(
+                  instanceId,
+                  windowDef.actionGroup,
+                  longWindowDuration,
+                  longWindowBurnRate,
+                  shortWindowDuration,
+                  shortWindowBurnRate,
+                  windowDef,
+                  shouldSuppress
+                );
 
           const alertId = instanceId;
           const actionGroup = shouldSuppress
             ? SUPPRESSED_PRIORITY_ACTION.id
+            : resultReason === NO_DATA_ALERT
+            ? NO_DATA_ACTION.id
             : windowDef.actionGroup;
 
           const { uuid } = alertsClient.report({
@@ -266,6 +273,15 @@ function getActionGroupName(id: string) {
     default:
       return ALERT_ACTION.name;
   }
+}
+
+function buildNoDataReason(sloName: string) {
+  return i18n.translate('xpack.slo.alerting.burnRate.noDataReason', {
+    defaultMessage: 'No data was found for SLO "{sloName}".',
+    values: {
+      sloName,
+    },
+  });
 }
 
 function buildReason(
