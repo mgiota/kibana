@@ -10,7 +10,6 @@ import type {
   SavedObjectReference,
   SavedObjectsClientContract,
 } from '@kbn/core-saved-objects-api-server';
-import type { FieldValue } from '@elastic/elasticsearch/lib/api/types';
 import type { Logger } from '@kbn/core/server';
 import type { Paginated, Pagination } from '@kbn/slo-schema';
 import { ALL_VALUE, sloDefinitionSchema, storedSloDefinitionSchema } from '@kbn/slo-schema';
@@ -25,7 +24,7 @@ export interface SLORepository {
   create(slo: SLODefinition): Promise<SLODefinition>;
   update(slo: SLODefinition): Promise<SLODefinition>;
   findAllByIds(ids: string[]): Promise<SLODefinition[]>;
-  getAll(searchAfter: FieldValue): Promise<SLODefinition[]>;
+  getAll(limit?: number): Promise<SLODefinition[]>;
   findById(id: string): Promise<SLODefinition>;
   deleteById(id: string, options?: { ignoreNotFound?: boolean }): Promise<void>;
   search(
@@ -120,15 +119,37 @@ export class KibanaSavedObjectsSLORepository implements SLORepository {
     return response.saved_objects.map((so) => this.toSLO(so)).filter(this.isSLO);
   }
 
-  async getAll(searchAfter: FieldValue): Promise<SLODefinition[]> {
-    const response = await this.soClient.find<StoredSLODefinition>({
+  async getAll(limit = 5000): Promise<SLODefinition[]> {
+    const perPage = 1000;
+
+    const finder = this.soClient.createPointInTimeFinder<StoredSLODefinition>({
       type: SO_SLO_TYPE,
-      page: 1,
-      perPage: 1000,
-      searchAfter: searchAfter ? [searchAfter] : undefined,
+      perPage,
+      sortField: 'id',
+      sortOrder: 'asc',
     });
 
-    return response.saved_objects.map((so) => this.toSLO(so)).filter(this.isSLO);
+    const results: SLODefinition[] = [];
+    try {
+      // Iterate pages using PIT + search_after under the hood for deterministic ordering
+      for await (const response of finder.find()) {
+        const items = response.saved_objects.map((so) => this.toSLO(so)).filter(this.isSLO);
+        results.push(...items);
+
+        if (results.length >= limit) {
+          break; // stop early if we hit the safety cutoff
+        }
+      }
+    } finally {
+      // ensure the finder is closed to free PIT resources
+      try {
+        await finder.close();
+      } catch (e) {
+        this.logger.debug('Error closing PIT finder for SLO repository: ' + String(e));
+      }
+    }
+
+    return results.slice(0, limit);
   }
 
   async search(

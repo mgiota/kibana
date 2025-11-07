@@ -56,7 +56,7 @@ export class GetSLOHealth {
 
     const sloList = params.list ?? (await this.getAllSLODefinitions());
 
-    const enableMap = new Map<
+    const enabledMap = new Map<
       string,
       {
         instanceId: string;
@@ -134,7 +134,7 @@ export class GetSLOHealth {
       instanceId: item.instanceId,
       revision: item.revision,
       name: item.name,
-      enabled: enableMap.get(item.id)?.enabled,
+      enabled: enabledMap.get(item.id)?.enabled,
     }));
 
     const summaryDocsById = await this.getSummaryDocsById(filteredList);
@@ -170,19 +170,13 @@ export class GetSLOHealth {
   }
 
   private getAllSLODefinitions = async () => {
-    let searchAfter: FieldValue = '';
-    let results: SLODefinition[] = [];
+    if (!this.repository) {
+      return [];
+    }
 
-    do {
-      if (!this.repository) {
-        break;
-      }
-
-      const newResults: SLODefinition[] = await this.repository.getAll(searchAfter);
-      searchAfter = newResults[newResults.length - 1]?.id;
-      results = results.concat(newResults);
-    } while (searchAfter);
-
+    // Safety cutoff to avoid pulling arbitrarily large numbers of saved objects into memory.
+    const AUTO_FETCH_CUTOFF = 5000;
+    const results: SLODefinition[] = await this.repository.getAll(AUTO_FETCH_CUTOFF);
     return results;
   };
 
