@@ -6,6 +6,7 @@
  */
 
 import {
+  EuiCallOut,
   EuiCheckbox,
   EuiConfirmModal,
   EuiFieldNumber,
@@ -13,6 +14,7 @@ import {
   EuiFormRow,
   EuiSpacer,
   EuiText,
+  EuiBasicTable,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -20,6 +22,7 @@ import type { SLODefinitionResponse } from '@kbn/slo-schema';
 import React, { useEffect, useState } from 'react';
 import { DEFAULT_STALE_SLO_THRESHOLD_HOURS } from '../../../../common/constants';
 import { usePurgeInstances } from '../../../pages/slo_management/hooks/use_purge_instances';
+import { usePurgeInstancesPrecheck } from '../../../pages/slo_management/hooks/use_purge_instances_precheck';
 import { useGetSettings } from '../../../pages/slo_settings/hooks/use_get_settings';
 
 interface Props {
@@ -38,11 +41,59 @@ export function PurgeInstancesConfirmationModal({ items, onCancel, onConfirm }: 
   const [override, setOverride] = useState<boolean>(false);
   const [staleDuration, setStaleDuration] = useState<number>(DEFAULT_STALE_SLO_THRESHOLD_HOURS);
 
+  const [precheckResult, setPrecheckResult] = useState<{
+    estimates?: Array<{ id: string; count: number }>;
+    total?: number;
+  } | null>(null);
+  const precheck = usePurgeInstancesPrecheck();
+
   useEffect(() => {
     if (!isLoading && settings?.staleThresholdInHours) {
       setStaleDuration(settings.staleThresholdInHours);
     }
   }, [isLoading, settings?.staleThresholdInHours]);
+
+  // run precheck when modal opens for a selection of SLOs
+  useEffect(() => {
+    let mounted = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    async function runPrecheck() {
+      // don't run precheck if no selection
+      if (!items || items.length === 0) {
+        setPrecheckResult(null);
+        return;
+      }
+
+      // validate staleDuration before running precheck
+      if (!Number.isInteger(staleDuration) || staleDuration <= 0) {
+        setPrecheckResult(null);
+        return;
+      }
+
+      try {
+        const res = await precheck.mutateAsync({
+          list: items.map((i) => i.id),
+          staleDuration: `${staleDuration}h`,
+        });
+        if (mounted) {
+          setPrecheckResult({ estimates: res.estimates, total: res.total });
+        }
+      } catch (_err) {
+        if (mounted) setPrecheckResult(null);
+      }
+    }
+
+    // debounce precheck to avoid firing on every keystroke
+    timer = window.setTimeout(runPrecheck, 500);
+
+    return () => {
+      mounted = false;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [items, staleDuration]);
 
   const requireOverride =
     staleDuration < (settings?.staleThresholdInHours ?? DEFAULT_STALE_SLO_THRESHOLD_HOURS);
@@ -79,6 +130,34 @@ export function PurgeInstancesConfirmationModal({ items, onCancel, onConfirm }: 
       }}
     >
       <EuiFlexGroup direction="column" gutterSize="s">
+        {precheckResult && precheckResult.total === 0 && (
+          <>
+            <EuiCallOut
+              announceOnMount
+              title={i18n.translate(
+                'xpack.slo.purgeInstancesConfirmationModal.noStaleInstancesDetectedTitle',
+                {
+                  defaultMessage: 'No stale instances detected for the selected SLOs',
+                }
+              )}
+              color="warning"
+              iconType="alert"
+              size="s"
+            >
+              <p>
+                {i18n.translate(
+                  'xpack.slo.purgeInstancesConfirmationModal.noStaleInstancesDetectedDescription',
+                  {
+                    defaultMessage:
+                      'A pre-check found no stale instances for the selected SLOs. You can still adapt the stale period and run the purge.',
+                  }
+                )}
+              </p>
+            </EuiCallOut>
+            <EuiSpacer size="m" />
+          </>
+        )}
+
         <EuiText>
           {hasSelectedSlos
             ? i18n.translate(
@@ -96,6 +175,67 @@ export function PurgeInstancesConfirmationModal({ items, onCancel, onConfirm }: 
         </EuiText>
 
         <EuiSpacer size="m" />
+
+        {precheckResult?.estimates && (precheckResult.total ?? 0) > 0 && (
+          <>
+            <EuiText size="s">
+              {i18n.translate('xpack.slo.purgeInstancesConfirmationModal.precheckBreakdownTitle', {
+                defaultMessage: 'Stale instances by SLO',
+              })}
+            </EuiText>
+            <EuiSpacer size="s" />
+            {items && (
+              <div
+                data-test-subj="staleSlosTableWrapper"
+                style={{ maxHeight: '130px', overflowY: 'auto', paddingRight: 8 }}
+              >
+                <EuiBasicTable
+                  data-test-subj="staleSlosTable"
+                  items={items.map((slo) => ({
+                    id: slo.id,
+                    name: slo.name,
+                    count: precheckResult.estimates?.find((e) => e.id === slo.id)?.count ?? 0,
+                  }))}
+                  columns={[
+                    {
+                      field: 'name',
+                      name: i18n.translate(
+                        'xpack.slo.purgeInstancesConfirmationModal.table.column.slo',
+                        { defaultMessage: 'SLO' }
+                      ),
+                      render: (name: string, item: { id: string }) => (
+                        <div>
+                          <EuiText size="s">{name}</EuiText>
+                          <EuiText size="xs" color="subdued">
+                            {item.id}
+                          </EuiText>
+                        </div>
+                      ),
+                    },
+                    {
+                      field: 'count',
+                      name: i18n.translate(
+                        'xpack.slo.purgeInstancesConfirmationModal.table.column.estimated',
+                        { defaultMessage: 'Stale instances' }
+                      ),
+                      render: (count: number) => (
+                        <EuiText size="s">
+                          {i18n.translate(
+                            'xpack.slo.purgeInstancesConfirmationModal.precheckBreakdownCount',
+                            { defaultMessage: '{count} stale instance(s)', values: { count } }
+                          )}
+                        </EuiText>
+                      ),
+                      width: '200px',
+                      align: 'right' as const,
+                    },
+                  ]}
+                />
+              </div>
+            )}
+            <EuiSpacer size="m" />
+          </>
+        )}
 
         <EuiFormRow
           label={i18n.translate(

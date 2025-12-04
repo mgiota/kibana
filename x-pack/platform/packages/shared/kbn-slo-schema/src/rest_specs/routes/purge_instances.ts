@@ -12,11 +12,18 @@ const purgeInstancesParamsSchema = t.type({
     list: t.array(sloIdSchema),
     staleDuration: durationType,
     force: t.boolean,
+    dryRun: t.boolean,
   }),
 });
 
 interface PurgeInstancesResponse {
   taskId?: string;
+  // when dryRun=true the server can return an estimate of affected instances
+  estimates?: Array<{
+    id: string;
+    count: number;
+  }>;
+  total?: number;
 }
 
 type PurgeInstancesInput = t.OutputOf<typeof purgeInstancesParamsSchema.props.body>;

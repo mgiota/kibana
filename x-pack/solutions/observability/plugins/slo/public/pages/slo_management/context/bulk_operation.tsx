@@ -167,16 +167,16 @@ export function BulkOperationProvider({ children }: { children: React.ReactNode 
                 title: 'Purge stale instances completed',
                 text:
                   sloCount > 0
-                    ? `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} from ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (scanned ${total} total instance${total !== 1 ? 's' : ''})`
-                    : `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} (scanned ${total} total instance${total !== 1 ? 's' : ''})`,
+                    ? `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} from ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (purged ${total} total instance${total !== 1 ? 's' : ''})`
+                    : `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} (purged ${total} total instance${total !== 1 ? 's' : ''})`,
               });
             } else {
               toasts.addSuccess({
                 title: 'Purge stale instances completed',
                 text:
                   sloCount > 0
-                    ? `No stale instances found in ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (scanned ${total} instance${total !== 1 ? 's' : ''})`
-                    : `No stale instances found (scanned ${total} instance${total !== 1 ? 's' : ''})`,
+                    ? `No stale instances found in ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (purged ${total} instance${total !== 1 ? 's' : ''})`
+                    : `No stale instances found (purged ${total} instance${total !== 1 ? 's' : ''})`,
               });
             }
 

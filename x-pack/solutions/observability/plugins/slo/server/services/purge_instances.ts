@@ -32,11 +32,53 @@ export async function purgeInstances(
   const list = params.list ?? [];
   const staleDuration = params.staleDuration ?? defaultStaleDuration;
   const force = Boolean(params.force);
+  const dryRun = Boolean(params.dryRun);
 
   if (!force && staleDuration.isShorterThan(defaultStaleDuration)) {
     throw new IllegalArgumentError(
       `staleDuration cannot be shorter than the overall SLO stale threshold of [${defaultStaleDuration.format()}]. Use force=true to override.`
     );
+  }
+
+  if (dryRun) {
+    // perform aggregation to estimate affected instances per slo.id
+    const body: any = {
+      size: 0,
+      query: {
+        bool: {
+          must: [
+            { term: { spaceId } },
+            {
+              range: {
+                summaryUpdatedAt: {
+                  lte: `now-${staleDuration.format()}`,
+                },
+              },
+            },
+            ...(list.length > 0 ? [{ terms: { 'slo.id': list } }] : []),
+          ],
+        },
+      },
+      aggs: {
+        by_slo: {
+          terms: {
+            field: 'slo.id',
+            size: 10000,
+          },
+        },
+      },
+    };
+
+    const resp = await scopedClusterClient.asCurrentUser.search({
+      index: SUMMARY_DESTINATION_INDEX_PATTERN,
+      body,
+    });
+
+    const buckets = resp.aggregations?.by_slo?.buckets ?? [];
+    const estimates = buckets.map((b: any) => ({ id: String(b.key), count: b.doc_count }));
+    const total = estimates.reduce((acc: number, cur: any) => acc + cur.count, 0);
+
+    return { estimates, total } as any;
   }
 
   const response = await scopedClusterClient.asCurrentUser.deleteByQuery({
