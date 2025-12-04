@@ -11,6 +11,7 @@ import { useMutation } from '@kbn/react-query';
 import { type PurgeInstancesInput, type PurgeInstancesResponse } from '@kbn/slo-schema';
 import { useKibana } from '../../../hooks/use_kibana';
 import { usePluginContext } from '../../../hooks/use_plugin_context';
+import { useBulkOperation } from '../context/bulk_operation';
 
 type ServerError = IHttpFetchError<ResponseErrorBody>;
 
@@ -19,6 +20,7 @@ export function usePurgeInstances({ onConfirm }: { onConfirm?: () => void } = {}
     notifications: { toasts },
   } = useKibana().services;
   const { sloClient } = usePluginContext();
+  const bulkOperation = useBulkOperation();
 
   return useMutation<PurgeInstancesResponse, ServerError, PurgeInstancesInput>(
     ['bulkPurgeSummary'],
@@ -41,7 +43,15 @@ export function usePurgeInstances({ onConfirm }: { onConfirm?: () => void } = {}
           }),
         });
       },
-      onSuccess: () => {
+      onSuccess: (response, { list }) => {
+        if (response.taskId) {
+          bulkOperation.register({
+            taskId: response.taskId,
+            operation: 'purge_instances',
+            items: (list ?? []).map((id) => ({ id })),
+          });
+        }
+
         toasts.addSuccess(
           i18n.translate('xpack.slo.bulkPurgeSummary.successNotification', {
             defaultMessage: 'Purge of stale SLO instances scheduled',

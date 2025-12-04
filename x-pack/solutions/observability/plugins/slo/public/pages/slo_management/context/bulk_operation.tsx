@@ -13,17 +13,21 @@ import { useKibana } from '../../../hooks/use_kibana';
 
 interface BulkOperationTask {
   taskId: string;
-  operation: 'delete';
+  operation: 'delete' | 'purge_instances';
   status: 'in-progress' | 'completed' | 'failed';
   items: Array<{ id: string; success: boolean; error?: string }>;
   createdAt: Date;
   updatedAt: Date;
   error?: string;
+  purgeStats?: {
+    total: number;
+    deleted: number;
+  };
 }
 
 interface RegisterBulkOperationTask {
   taskId: string;
-  operation: 'delete';
+  operation: 'delete' | 'purge_instances';
   items: Array<{ id: string }>;
 }
 
@@ -68,8 +72,117 @@ export function BulkOperationProvider({ children }: { children: React.ReactNode 
     queries: tasks
       .filter((task) => task.status === 'in-progress')
       .map((task) => ({
-        queryKey: sloKeys.bulkDeleteStatus(task.taskId),
+        queryKey:
+          task.operation === 'delete'
+            ? sloKeys.bulkDeleteStatus(task.taskId)
+            : ['purgeInstancesStatus', task.taskId],
         queryFn: async () => {
+          if (task.operation === 'purge_instances') {
+            const response = await sloClient.fetch(
+              'GET /api/observability/slos/_purge_instances/{taskId}',
+              { params: { path: { taskId: task.taskId } } }
+            );
+
+            if (!response.completed) {
+              setTasks((prevTasks) =>
+                prevTasks.map((prevTask) => {
+                  if (prevTask.taskId === task.taskId) {
+                    return {
+                      ...prevTask,
+                      status: 'in-progress',
+                      updatedAt: new Date(),
+                      purgeStats: response.status
+                        ? {
+                            total: response.status.total,
+                            deleted: response.status.deleted,
+                          }
+                        : undefined,
+                    };
+                  }
+                  return prevTask;
+                })
+              );
+
+              return response;
+            }
+
+            queryClient.invalidateQueries({ queryKey: sloKeys.allDefinitions(), exact: false });
+
+            if (response.error) {
+              setTasks((prevTasks) =>
+                prevTasks.map((prevTask) => {
+                  if (prevTask.taskId === task.taskId) {
+                    return {
+                      ...prevTask,
+                      items: prevTask.items.map((item) => ({
+                        ...item,
+                        success: false,
+                        error: response.error,
+                      })),
+                      status: 'failed',
+                      error: response.error,
+                      updatedAt: new Date(),
+                    };
+                  }
+                  return prevTask;
+                })
+              );
+
+              toasts.addError(new Error(response.error), {
+                title: 'Purge stale instances failed',
+              });
+
+              return response;
+            }
+
+            setTasks((prevTasks) =>
+              prevTasks.map((prevTask) => {
+                if (prevTask.taskId === task.taskId) {
+                  return {
+                    ...prevTask,
+                    items: prevTask.items.map((item) => ({
+                      ...item,
+                      success: true,
+                    })),
+                    status: 'completed',
+                    updatedAt: new Date(),
+                    purgeStats: response.status
+                      ? {
+                          total: response.status.total,
+                          deleted: response.status.deleted,
+                        }
+                      : undefined,
+                  };
+                }
+                return prevTask;
+              })
+            );
+
+            const deleted = response.status?.deleted ?? 0;
+            const total = response.status?.total ?? 0;
+            const sloCount = task.items.length;
+
+            if (deleted > 0) {
+              toasts.addSuccess({
+                title: 'Purge stale instances completed',
+                text:
+                  sloCount > 0
+                    ? `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} from ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (scanned ${total} total instance${total !== 1 ? 's' : ''})`
+                    : `Deleted ${deleted} stale instance${deleted !== 1 ? 's' : ''} (scanned ${total} total instance${total !== 1 ? 's' : ''})`,
+              });
+            } else {
+              toasts.addSuccess({
+                title: 'Purge stale instances completed',
+                text:
+                  sloCount > 0
+                    ? `No stale instances found in ${sloCount} selected SLO${sloCount !== 1 ? 's' : ''} (scanned ${total} instance${total !== 1 ? 's' : ''})`
+                    : `No stale instances found (scanned ${total} instance${total !== 1 ? 's' : ''})`,
+              });
+            }
+
+            return response;
+          }
+
           const response = await sloClient.fetch(
             'GET /api/observability/slos/_bulk_delete/{taskId} 2023-10-31',
             { params: { path: { taskId: task.taskId } } }
