@@ -7,7 +7,7 @@
 
 import type { GetDrilldownsSchemaFnType } from '@kbn/embeddable-plugin/server';
 import type { TypeOf } from '@kbn/config-schema';
-import { schema } from '@kbn/config-schema';
+import { schema, Type } from '@kbn/config-schema';
 import { serializedTitlesSchema } from '@kbn/presentation-publishing-schemas';
 import { asCodeFilterSchema } from '@kbn/as-code-filters-schema';
 import { SLO_EMBEDDABLE_SUPPORTED_TRIGGERS } from '../../../common/embeddables/overview/constants';
@@ -84,8 +84,58 @@ function getGroupOverviewEmbeddableSchema(getDrilldownsSchema: GetDrilldownsSche
   );
 }
 
+function applyOverviewModeDefault(value: unknown): Record<string, unknown> {
+  const raw = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  const overviewMode =
+    raw.overview_mode !== undefined && raw.overview_mode !== null
+      ? raw.overview_mode
+      : raw.slo_id != null
+      ? 'single'
+      : 'groups';
+  return { ...raw, overview_mode: overviewMode };
+}
+
+/**
+ * Wraps the overview embeddable schema to default `overview_mode` when omitted:
+ * - `'single'` when `slo_id` is provided
+ * - `'groups'` when `slo_id` is not specified
+ *
+ * The default is applied at the Joi schema level so it works for both (1) route-level
+ * request body validation (dashboard state schema uses configSchema.getSchema()) and
+ * (2) handler-level panelSchema.validate(config).
+ */
+interface JoiRootLike {
+  $_root?: { any: () => { custom: (fn: (v: unknown) => unknown) => unknown } };
+}
+
+function withOverviewModeDefaults<T>(inner: Type<T>): Type<T> {
+  const innerSchema = inner.getSchema();
+  const root = (innerSchema as unknown as JoiRootLike).$_root;
+  if (!root) {
+    return inner;
+  }
+  const anySchema = root.any();
+  if (typeof anySchema?.custom !== 'function') {
+    return inner;
+  }
+  const wrappedSchema = anySchema.custom((value: unknown) => {
+    const normalized = applyOverviewModeDefault(value);
+    const result = innerSchema.validate(normalized, { presence: 'required' });
+    if ((result as { error?: Error }).error) {
+      throw (result as { error: Error }).error;
+    }
+    return (result as { value: T }).value;
+  });
+  return new (class OverviewEmbeddableSchemaWithDefaults extends Type<T> {
+    constructor(s: unknown) {
+      // wrappedSchema is a Joi schema from the same root as innerSchema
+      super(s as never);
+    }
+  })(wrappedSchema) as Type<T>;
+}
+
 export const getOverviewEmbeddableSchema = (getDrilldownsSchema: GetDrilldownsSchemaFnType) => {
-  return schema.discriminatedUnion(
+  const unionSchema = schema.discriminatedUnion(
     'overview_mode',
     [
       getSingleOverviewEmbeddableSchema(getDrilldownsSchema),
@@ -93,6 +143,7 @@ export const getOverviewEmbeddableSchema = (getDrilldownsSchema: GetDrilldownsSc
     ],
     { meta: { description: 'SLO Overview embeddable schema' } }
   );
+  return withOverviewModeDefaults(unionSchema);
 };
 
 export type GroupBy = TypeOf<typeof groupBySchema>;
