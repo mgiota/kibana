@@ -16,9 +16,25 @@ import type { ClientPluginsStart } from '../../../../../plugin';
 import { ConfigKey } from '../../../../../../common/runtime_types';
 import { useSelectedMonitor } from './use_selected_monitor';
 
-export const useMonitorAttachmentConfig = () => {
+/**
+ * Minimal monitor shape required to configure the agent builder attachment.
+ * Accepts any object with config_id, name, and type (ConfigKey.CONFIG_ID, etc).
+ */
+export interface MonitorForAttachment {
+  [ConfigKey.CONFIG_ID]?: string;
+  [ConfigKey.NAME]?: string;
+  [ConfigKey.MONITOR_TYPE]?: string;
+}
+
+/**
+ * Configures the agent builder conversation flyout with the given monitor.
+ * Use this when you already have monitor data (e.g. from Redux selectors).
+ */
+export const useMonitorAttachmentConfigWithMonitor = (
+  monitor: MonitorForAttachment | null,
+  loading: boolean
+) => {
   const { agentBuilder } = useKibana<ClientPluginsStart>().services;
-  const { monitor, loading } = useSelectedMonitor({ refetchMonitorEnabled: false });
 
   useEffect(() => {
     if (!agentBuilder || loading || !monitor) {
@@ -55,4 +71,13 @@ export const useMonitorAttachmentConfig = () => {
       agentBuilder.clearConversationFlyoutActiveConfig();
     };
   }, [agentBuilder, loading, monitor]);
+};
+
+/**
+ * Configures the agent builder conversation flyout with the selected monitor
+ * from the monitor details page (uses useSelectedMonitor).
+ */
+export const useMonitorAttachmentConfig = () => {
+  const { monitor, loading } = useSelectedMonitor({ refetchMonitorEnabled: false });
+  useMonitorAttachmentConfigWithMonitor(monitor, loading);
 };

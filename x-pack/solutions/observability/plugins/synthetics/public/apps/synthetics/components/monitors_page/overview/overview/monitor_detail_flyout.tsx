@@ -27,10 +27,6 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
-import {
-  OBSERVABILITY_AGENT_ID,
-  OBSERVABILITY_MONITOR_ATTACHMENT_TYPE_ID,
-} from '@kbn/observability-agent-builder-plugin/public';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useKibanaSpace } from '../../../../../../hooks/use_kibana_space';
@@ -55,6 +51,7 @@ import { ErrorCallout } from '../../../common/components/error_callout';
 import { MonitorStatus } from '../../../common/components/monitor_status';
 import { useOverviewStatus } from '../../hooks/use_overview_status';
 import { MonitorEnabled } from '../../management/monitor_list_table/monitor_enabled';
+import { useMonitorAttachmentConfigWithMonitor } from '../../../monitor_details/hooks/use_monitor_attachment_config';
 import type { EncryptedSyntheticsMonitor, OverviewStatusMetaData } from '../types';
 import { ConfigKey } from '../types';
 import { ActionsPopover } from './actions_popover';
@@ -285,42 +282,15 @@ export function MonitorDetailFlyout(props: Props) {
     monitorLocations: monitorObject?.locations,
   });
 
-  const { agentBuilder } = useKibana<ClientPluginsStart>().services;
-
-  useEffect(() => {
-    if (!agentBuilder || isLoading || !monitorObject) {
-      return;
-    }
-
-    const monitorName = monitorObject[ConfigKey.NAME];
-    const monitorType = monitorObject[ConfigKey.MONITOR_TYPE];
-
-    if (!configId) {
-      return;
-    }
-
-    agentBuilder.setConversationFlyoutActiveConfig({
-      agentId: OBSERVABILITY_AGENT_ID,
-      attachments: [
-        {
-          type: OBSERVABILITY_MONITOR_ATTACHMENT_TYPE_ID,
-          data: {
-            attachmentLabel: i18n.translate('xpack.synthetics.monitorAttachment.attachmentLabel', {
-              defaultMessage: '{monitorName} monitor',
-              values: { monitorName },
-            }),
-            configId,
-            monitorName,
-            monitorType: monitorType ?? 'unknown',
-          },
-        },
-      ],
-    });
-
-    return () => {
-      agentBuilder.clearConversationFlyoutActiveConfig();
-    };
-  }, [agentBuilder, isLoading, monitorObject, configId]);
+  useMonitorAttachmentConfigWithMonitor(
+    monitorObject
+      ? {
+          ...monitorObject,
+          [ConfigKey.CONFIG_ID]: monitorObject[ConfigKey.CONFIG_ID] ?? configId,
+        }
+      : null,
+    isLoading
+  );
 
   const isOverlay = useIsWithinMaxBreakpoint('xl');
 
