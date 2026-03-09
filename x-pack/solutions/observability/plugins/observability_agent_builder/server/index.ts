@@ -17,6 +17,7 @@ export type {
 } from './types';
 
 export type { ObservabilityAgentBuilderServerRouteRepository } from './routes/get_global_observability_agent_builder_route_repository';
+export type { SyntheticsMonitorDetailsResponse } from './data_registry/data_registry_types';
 
 export const plugin = (initializerContext: PluginInitializerContext) =>
   new ObservabilityAgentBuilderPlugin(initializerContext);
