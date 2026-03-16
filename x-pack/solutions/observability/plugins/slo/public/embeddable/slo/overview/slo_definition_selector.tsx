@@ -17,15 +17,25 @@ interface Props {
   onSelected: (slo: SearchSLODefinitionItem | undefined) => void;
   hasError?: boolean;
   remoteName?: string;
+  initialSelected?: SearchSLODefinitionItem;
 }
 
 const SLO_REQUIRED = i18n.translate('xpack.slo.sloEmbeddable.config.errors.sloRequired', {
   defaultMessage: 'SLO is required.',
 });
 
-export function SloDefinitionSelector({ onSelected, hasError, remoteName }: Props) {
-  const [selectedOptions, setSelectedOptions] = useState<Array<EuiComboBoxOptionOption<string>>>(
-    []
+export function SloDefinitionSelector({
+  onSelected,
+  hasError,
+  remoteName,
+  initialSelected,
+}: Props) {
+  const [selectedOptions, setSelectedOptions] = useState<
+    Array<EuiComboBoxOptionOption<string>>
+  >(() =>
+    initialSelected
+      ? [{ label: initialSelected.name, value: initialSelected.id }]
+      : []
   );
   const [searchValue, setSearchValue] = useState<string>('');
   const search = searchValue.trim();
@@ -37,13 +47,22 @@ export function SloDefinitionSelector({ onSelected, hasError, remoteName }: Prop
   });
 
   const options = useMemo(() => {
-    return (
+    const fromApi =
       definitionsData?.results.map((slo) => ({
         label: slo.name,
         value: slo.id,
-      })) ?? []
-    );
-  }, [definitionsData]);
+      })) ?? [];
+    if (
+      initialSelected &&
+      !fromApi.some((o) => o.value === initialSelected.id)
+    ) {
+      return [
+        { label: initialSelected.name, value: initialSelected.id },
+        ...fromApi,
+      ];
+    }
+    return fromApi;
+  }, [definitionsData, initialSelected]);
 
   const onChange = (opts: Array<EuiComboBoxOptionOption<string>>) => {
     setSelectedOptions(opts);

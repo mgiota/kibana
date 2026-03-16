@@ -78,14 +78,9 @@ interface Props {
   timeRange: TimeRange;
   onLoaded?: () => void;
   lastReloadRequestTime: number | undefined;
-  showAllGroupByInstances?: boolean;
 }
 
-export const getSloInstanceFilter = (
-  sloId: string,
-  sloInstanceId: string,
-  showAllGroupByInstances = false
-) => {
+export const getSloInstanceFilter = (sloId: string, sloInstanceId: string) => {
   return {
     bool: {
       must: [
@@ -94,7 +89,7 @@ export const getSloInstanceFilter = (
             'slo.id': sloId,
           },
         },
-        ...(sloInstanceId !== ALL_VALUE && !showAllGroupByInstances
+        ...(sloInstanceId !== ALL_VALUE
           ? [
               {
                 term: {
@@ -108,11 +103,7 @@ export const getSloInstanceFilter = (
   };
 };
 
-export const useSloAlertsQuery = (
-  slos: SloItem[],
-  timeRange: TimeRange,
-  showAllGroupByInstances?: boolean
-) => {
+export const useSloAlertsQuery = (slos: SloItem[], timeRange: TimeRange) => {
   return useMemo(() => {
     if (slos.length === 0) {
       return {
@@ -140,7 +131,7 @@ export const useSloAlertsQuery = (
           {
             bool: {
               should: slos.map((slo) =>
-                getSloInstanceFilter(slo.slo_id, slo.slo_instance_id, showAllGroupByInstances)
+                getSloInstanceFilter(slo.slo_id, slo.slo_instance_id)
               ),
             },
           },
@@ -149,7 +140,7 @@ export const useSloAlertsQuery = (
     };
 
     return query;
-  }, [showAllGroupByInstances, slos, timeRange.from]);
+  }, [slos, timeRange.from]);
 };
 
 export function SloAlertsTable({
@@ -158,7 +149,6 @@ export function SloAlertsTable({
   timeRange,
   onLoaded,
   lastReloadRequestTime,
-  showAllGroupByInstances,
 }: Props) {
   const ref = useRef<AlertsTableImperativeApi>(null);
 
@@ -172,7 +162,7 @@ export function SloAlertsTable({
       id={ALERTS_TABLE_ID}
       ruleTypeIds={[SLO_BURN_RATE_RULE_TYPE_ID]}
       consumers={[AlertConsumers.SLO, AlertConsumers.ALERTS, AlertConsumers.OBSERVABILITY]}
-      query={useSloAlertsQuery(slos, timeRange, showAllGroupByInstances)}
+      query={useSloAlertsQuery(slos, timeRange)}
       columns={columns}
       hideLazyLoader
       pageSize={ALERTS_PER_PAGE}

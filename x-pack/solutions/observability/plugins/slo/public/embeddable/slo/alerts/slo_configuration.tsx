@@ -14,19 +14,18 @@ import {
   EuiFlyoutBody,
   EuiFlyoutFooter,
   EuiFlyoutHeader,
-  EuiSpacer,
-  EuiSwitch,
+  EuiFormRow,
   EuiTitle,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { SLOWithSummaryResponse } from '@kbn/slo-schema';
 import { ALL_VALUE } from '@kbn/slo-schema';
-import React, { useEffect, useState } from 'react';
-import { useFetchSloList } from '../../../hooks/use_fetch_slo_list';
-import { SloSelector } from './slo_selector';
+import type { SearchSLODefinitionItem } from '@kbn/slo-schema';
+import React, { useState } from 'react';
+import { SloDefinitionSelector } from '../overview/slo_definition_selector';
+import { SloInstanceSelector } from '../overview/slo_instance_selector';
 import type { AlertsCustomState, SloItem } from './types';
 
 interface SloConfigurationProps {
@@ -35,65 +34,98 @@ interface SloConfigurationProps {
   onCancel: () => void;
 }
 
-function toSloItem(slo: SLOWithSummaryResponse): SloItem {
+interface SloRow {
+  id: string;
+  sloDefinition?: SearchSLODefinitionItem;
+  instanceId?: string;
+}
+
+function toSloItem(row: SloRow): SloItem | undefined {
+  if (!row.sloDefinition) return undefined;
+  const hasGroupBy =
+    row.sloDefinition.groupBy &&
+    row.sloDefinition.groupBy.length > 0 &&
+    !row.sloDefinition.groupBy.includes(ALL_VALUE);
+
   return {
-    slo_id: slo.id,
-    slo_instance_id: slo.instanceId,
-    name: slo.name,
-    group_by: [slo.groupBy].flat().filter(Boolean) as string[],
+    slo_id: row.sloDefinition.id,
+    slo_instance_id: hasGroupBy ? row.instanceId ?? ALL_VALUE : ALL_VALUE,
+    name: row.sloDefinition.name,
+    group_by: [row.sloDefinition.groupBy].flat().filter(Boolean) as string[],
   };
 }
 
 export function SloConfiguration({ initialInput, onCreate, onCancel }: SloConfigurationProps) {
-  const hasSlosWithAllInstances = initialInput?.slos?.some(
-    (slo) => slo.slo_instance_id === ALL_VALUE
-  );
-  const sloIdsToExpand =
-    initialInput?.slos
-      ?.filter((slo) => slo.slo_instance_id === ALL_VALUE)
-      .map((slo) => slo.slo_id) ?? [];
-
-  const { data: expandedSloList } = useFetchSloList({
-    kqlQuery: sloIdsToExpand.map((id) => `slo.id:"${id}"`).join(' or '),
-    perPage: 100,
-    disabled: sloIdsToExpand.length === 0,
-  });
-
-  const [showAllGroupByInstances, setShowAllGroupByInstances] = useState(() => {
-    if (hasSlosWithAllInstances) {
-      return initialInput?.show_all_group_by_instances ?? true;
+  const [rows, setRows] = useState<SloRow[]>(() => {
+    const initial = initialInput?.slos ?? [];
+    if (initial.length === 0) {
+      return [{ id: 'row-0' }];
     }
-    return initialInput?.show_all_group_by_instances ?? false;
+    return initial.map((slo, idx) => ({
+      id: `row-${idx}`,
+      sloDefinition: {
+        id: slo.slo_id,
+        name: slo.name,
+        groupBy: slo.group_by,
+      } as SearchSLODefinitionItem,
+      instanceId: slo.slo_instance_id,
+    }));
   });
-  const [selectedSlos, setSelectedSlos] = useState<SloItem[]>(initialInput?.slos ?? []);
-  const [hasExpandedSlos, setHasExpandedSlos] = useState(false);
-
-  useEffect(() => {
-    if (
-      sloIdsToExpand.length > 0 &&
-      expandedSloList?.results &&
-      expandedSloList.results.length > 0 &&
-      !hasExpandedSlos
-    ) {
-      const instancesOnly = expandedSloList.results.filter((r) => r.instanceId !== ALL_VALUE);
-      if (instancesOnly.length > 0) {
-        const expandedItems = instancesOnly.map((r) => toSloItem(r));
-        const slosWithSpecificInstances = initialInput!.slos!.filter(
-          (slo) => slo.slo_instance_id !== ALL_VALUE
-        );
-        setSelectedSlos([...slosWithSpecificInstances, ...expandedItems]);
-        setShowAllGroupByInstances(true);
-        setHasExpandedSlos(true);
-      }
-    }
-  }, [expandedSloList?.results, initialInput, sloIdsToExpand.length, hasExpandedSlos]);
 
   const [hasError, setHasError] = useState(false);
+  const [rowErrors, setRowErrors] = useState<Record<string, boolean>>({});
 
-  const onConfirmClick = () =>
-    onCreate({ slos: selectedSlos, show_all_group_by_instances: showAllGroupByInstances });
+  const addRow = () => {
+    setRows((prev) => [...prev, { id: `row-${Date.now()}` }]);
+  };
 
-  const hasGroupBy = (selectedSlos?.length ?? 0) > 0;
+  const removeRow = (id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    setRowErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const updateRow = (id: string, update: Partial<SloRow>) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...update } : r)));
+  };
+
+  const onConfirmClick = () => {
+    const slos: SloItem[] = [];
+    const errors: Record<string, boolean> = {};
+
+    for (const row of rows) {
+      const item = toSloItem(row);
+      if (!item) {
+        if (row.sloDefinition !== undefined || row.instanceId !== undefined) {
+          errors[row.id] = true;
+        }
+        continue;
+      }
+      if (!row.sloDefinition) {
+        errors[row.id] = true;
+        continue;
+      }
+      const hasGroupBy =
+        row.sloDefinition.groupBy &&
+        row.sloDefinition.groupBy.length > 0 &&
+        !row.sloDefinition.groupBy.includes(ALL_VALUE);
+      if (hasGroupBy && !row.instanceId) {
+        errors[row.id] = true;
+        continue;
+      }
+      slos.push(item);
+    }
+
+    setRowErrors(errors);
+    setHasError(Object.keys(errors).length > 0);
+
+    if (Object.keys(errors).length === 0 && slos.length > 0) {
+      onCreate({ slos });
+    }
+  };
 
   const flyoutTitleId = useGeneratedHtmlId({
     prefix: 'alertsConfigurationFlyout',
@@ -117,42 +149,86 @@ export function SloConfiguration({ initialInput, onCreate, onCancel }: SloConfig
         </EuiTitle>
       </EuiFlyoutHeader>
       <EuiFlyoutBody>
-        <EuiFlexGroup>
-          <EuiFlexItem grow>
-            <SloSelector
-              initialSlos={selectedSlos}
-              hasError={hasError}
-              singleSelection={false}
-              onSelected={(slos) => {
-                setHasError(slos === undefined);
-                if (Array.isArray(slos)) {
-                  setSelectedSlos(
-                    slos?.map((slo) => ({
-                      slo_id: slo?.id ?? '',
-                      slo_instance_id: slo?.instanceId ?? '',
-                      name: slo?.name ?? '',
-                      group_by: [slo?.groupBy].flat().filter(Boolean) as string[],
-                    })) as SloItem[]
-                  );
-                }
-              }}
-            />
+        <EuiFlexGroup direction="column" gutterSize="m">
+          {rows.map((row) => {
+            const hasGroupBy =
+              row.sloDefinition?.groupBy &&
+              row.sloDefinition.groupBy.length > 0 &&
+              !row.sloDefinition.groupBy.includes(ALL_VALUE);
+            const showInstanceSelector = hasGroupBy && !!row.sloDefinition;
+            const rowHasError = rowErrors[row.id];
+
+            return (
+              <EuiFlexItem key={row.id}>
+                <EuiFlexGroup
+                  gutterSize="s"
+                  alignItems="flexEnd"
+                  css={css`
+                    padding: 12px;
+                    background: var(--euiColorEmptyShade);
+                    border: 1px solid var(--euiColorLightShade);
+                    border-radius: 4px;
+                  `}
+                >
+                  <EuiFlexItem grow>
+                    <EuiFlexGroup direction="column" gutterSize="s">
+                      <EuiFlexItem>
+                        <SloDefinitionSelector
+                          initialSelected={row.sloDefinition}
+                          onSelected={(slo) => {
+                            updateRow(row.id, {
+                              sloDefinition: slo,
+                              instanceId: undefined,
+                            });
+                            setRowErrors((prev) => ({ ...prev, [row.id]: slo === undefined }));
+                          }}
+                          hasError={rowHasError && !row.sloDefinition}
+                        />
+                      </EuiFlexItem>
+                      {showInstanceSelector && (
+                        <EuiFlexItem>
+                          <SloInstanceSelector
+                            sloId={row.sloDefinition!.id}
+                            remoteName={row.sloDefinition?.remote?.remoteName}
+                            initialSelected={row.instanceId}
+                            onSelected={(instanceId) => {
+                              updateRow(row.id, { instanceId });
+                            }}
+                            hasError={rowHasError && hasGroupBy && !row.instanceId}
+                          />
+                        </EuiFlexItem>
+                      )}
+                    </EuiFlexGroup>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiButtonEmpty
+                      color="danger"
+                      iconType="trash"
+                      onClick={() => removeRow(row.id)}
+                      aria-label={i18n.translate('xpack.slo.sloConfiguration.removeRowAriaLabel', {
+                        defaultMessage: 'Remove SLO',
+                      })}
+                      data-test-subj={`sloAlertsConfigRemoveRow-${row.id}`}
+                    />
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+              </EuiFlexItem>
+            );
+          })}
+          <EuiFlexItem>
+            <EuiFormRow>
+              <EuiButtonEmpty
+                iconType="plusInCircle"
+                onClick={addRow}
+                data-test-subj="sloAlertsConfigAddRow"
+              >
+                {i18n.translate('xpack.slo.sloConfiguration.addSloButton', {
+                  defaultMessage: 'Add SLO',
+                })}
+              </EuiButtonEmpty>
+            </EuiFormRow>
           </EuiFlexItem>
         </EuiFlexGroup>
-        {hasGroupBy && (
-          <>
-            <EuiSpacer />
-            <EuiSwitch
-              label={i18n.translate('xpack.slo.sloConfiguration.euiSwitch.showAllGroupByLabel', {
-                defaultMessage: 'Show all related group-by instances',
-              })}
-              checked={showAllGroupByInstances}
-              onChange={(e) => {
-                setShowAllGroupByInstances(e.target.checked);
-              }}
-            />
-          </>
-        )}
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
         <EuiFlexGroup justifyContent="spaceBetween">
@@ -165,7 +241,7 @@ export function SloConfiguration({ initialInput, onCreate, onCancel }: SloConfig
 
           <EuiButton
             data-test-subj="sloConfirmButton"
-            isDisabled={!selectedSlos || selectedSlos.length === 0 || hasError}
+            isDisabled={hasError || rows.every((r) => !r.sloDefinition)}
             onClick={onConfirmClick}
             fill
           >

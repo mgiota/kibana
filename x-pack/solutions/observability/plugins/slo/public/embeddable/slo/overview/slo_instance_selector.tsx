@@ -18,6 +18,7 @@ interface Props {
   remoteName?: string;
   onSelected: (instanceId: string | undefined) => void;
   hasError?: boolean;
+  initialSelected?: string;
 }
 
 const ALL_OPTION: EuiComboBoxOptionOption<string> = {
@@ -27,9 +28,23 @@ const ALL_OPTION: EuiComboBoxOptionOption<string> = {
   value: ALL_VALUE,
 };
 
-export function SloInstanceSelector({ sloId, remoteName, onSelected, hasError }: Props) {
-  const [selectedOptions, setSelectedOptions] = useState<Array<EuiComboBoxOptionOption<string>>>(
-    []
+export function SloInstanceSelector({
+  sloId,
+  remoteName,
+  onSelected,
+  hasError,
+  initialSelected,
+}: Props) {
+  const [selectedOptions, setSelectedOptions] = useState<
+    Array<EuiComboBoxOptionOption<string>>
+  >(() =>
+    initialSelected !== undefined
+      ? [
+          initialSelected === ALL_VALUE
+            ? ALL_OPTION
+            : { label: initialSelected, value: initialSelected },
+        ]
+      : []
   );
   const [search, setSearch] = useState<string>();
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -48,6 +63,11 @@ export function SloInstanceSelector({ sloId, remoteName, onSelected, hasError }:
       label: instance.instanceId,
       value: instance.instanceId,
     })) ?? []),
+    ...(initialSelected &&
+    initialSelected !== ALL_VALUE &&
+    !instancesData?.results?.some((r) => r.instanceId === initialSelected)
+      ? [{ label: initialSelected, value: initialSelected }]
+      : []),
   ];
 
   const onChange = (opts: Array<EuiComboBoxOptionOption<string>>) => {

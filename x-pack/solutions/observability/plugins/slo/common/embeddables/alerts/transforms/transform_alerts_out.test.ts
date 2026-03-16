@@ -24,7 +24,6 @@ describe('transformAlertsOut', () => {
       } as unknown as AlertsEmbeddableState)
     ).toMatchInlineSnapshot(`
       Object {
-        "show_all_group_by_instances": true,
         "slos": Array [
           Object {
             "group_by": Array [
@@ -32,7 +31,7 @@ describe('transformAlertsOut', () => {
             ],
             "name": "Legacy SLO",
             "slo_id": "legacy-slo-id",
-            "slo_instance_id": "legacy-instance-id",
+            "slo_instance_id": "*",
           },
         ],
       }
@@ -42,7 +41,6 @@ describe('transformAlertsOut', () => {
   it('should return state unchanged when already in snake_case', () => {
     expect(
       transformAlertsOut({
-        show_all_group_by_instances: false,
         slos: [
           {
             slo_id: 'new-slo-id',
@@ -54,7 +52,6 @@ describe('transformAlertsOut', () => {
       })
     ).toMatchInlineSnapshot(`
       Object {
-        "show_all_group_by_instances": false,
         "slos": Array [
           Object {
             "group_by": Array [
@@ -88,7 +85,6 @@ describe('transformAlertsOut', () => {
       } as unknown as AlertsEmbeddableState)
     ).toMatchInlineSnapshot(`
       Object {
-        "show_all_group_by_instances": true,
         "slos": Array [
           Object {
             "group_by": Array [
@@ -103,52 +99,53 @@ describe('transformAlertsOut', () => {
     `);
   });
 
-  it('should migrate legacy showAllGroupByInstances to show_all_group_by_instances', () => {
+  it('should migrate legacy showAllGroupByInstances by expanding instance to * for grouped SLOs', () => {
     expect(
       transformAlertsOut({
         showAllGroupByInstances: true,
-        slos: [],
+        slos: [
+          {
+            slo_id: 'slo-1',
+            slo_instance_id: 'instance-1',
+            name: 'SLO',
+            group_by: ['host.name'],
+          },
+        ],
       } as unknown as AlertsEmbeddableState)
     ).toMatchInlineSnapshot(`
       Object {
-        "show_all_group_by_instances": true,
-        "slos": Array [],
+        "slos": Array [
+          Object {
+            "group_by": Array [
+              "host.name",
+            ],
+            "name": "SLO",
+            "slo_id": "slo-1",
+            "slo_instance_id": "*",
+          },
+        ],
       }
     `);
   });
 
-  it('should not include legacy showAllGroupByInstances in output', () => {
+  it('should not include show_all_group_by_instances in output', () => {
     const result = transformAlertsOut({
       showAllGroupByInstances: false,
+      show_all_group_by_instances: true,
       slos: [],
     } as unknown as AlertsEmbeddableState);
     expect(result).not.toHaveProperty('showAllGroupByInstances');
-    expect(result).toHaveProperty('show_all_group_by_instances', false);
-  });
-
-  it('should default show_all_group_by_instances to false when missing', () => {
-    expect(transformAlertsOut({ slos: [] } as unknown as AlertsEmbeddableState)).toMatchObject({
-      show_all_group_by_instances: false,
-      slos: [],
-    });
+    expect(result).not.toHaveProperty('show_all_group_by_instances');
+    expect(result).toMatchObject({ slos: [] });
   });
 
   it('should handle empty slos array', () => {
-    expect(
-      transformAlertsOut({
-        show_all_group_by_instances: false,
-        slos: [],
-      })
-    ).toEqual({
-      show_all_group_by_instances: false,
-      slos: [],
-    });
+    expect(transformAlertsOut({ slos: [] })).toEqual({ slos: [] });
   });
 
   it('should handle mixed legacy and snake_case slo items', () => {
     expect(
       transformAlertsOut({
-        show_all_group_by_instances: false,
         slos: [
           {
             slo_id: 'snake-slo',
@@ -166,7 +163,6 @@ describe('transformAlertsOut', () => {
       } as unknown as AlertsEmbeddableState)
     ).toMatchInlineSnapshot(`
       Object {
-        "show_all_group_by_instances": false,
         "slos": Array [
           Object {
             "group_by": Array [],
@@ -191,12 +187,10 @@ describe('transformAlertsOut', () => {
     expect(
       transformAlertsOut({
         title: 'My Alerts Panel',
-        show_all_group_by_instances: false,
         slos: [],
       } as unknown as AlertsEmbeddableState)
     ).toMatchObject({
       title: 'My Alerts Panel',
-      show_all_group_by_instances: false,
       slos: [],
     });
   });

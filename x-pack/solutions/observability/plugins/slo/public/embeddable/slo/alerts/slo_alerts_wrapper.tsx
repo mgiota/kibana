@@ -13,6 +13,7 @@ import type { Subject } from 'rxjs';
 import { css } from '@emotion/react';
 import { observabilityPaths } from '@kbn/observability-plugin/common';
 import type { FetchContext } from '@kbn/presentation-publishing';
+import { ALL_VALUE } from '@kbn/slo-schema';
 import { SloIncludedCount } from './components/slo_included_count';
 import { SloAlertsSummary } from './components/slo_alerts_summary';
 import { SloAlertsTable } from './components/slo_alerts_table';
@@ -24,7 +25,6 @@ interface Props {
   timeRange: TimeRange;
   onRenderComplete?: () => void;
   reloadSubject: Subject<FetchContext>;
-  showAllGroupByInstances?: boolean;
   onEdit: () => void;
 }
 
@@ -34,9 +34,9 @@ export function SloAlertsWrapper({
   timeRange: initialTimeRange,
   onRenderComplete,
   reloadSubject,
-  showAllGroupByInstances,
   onEdit,
 }: Props) {
+  const showSloIncludedCount = slos.some((s) => s.slo_instance_id === ALL_VALUE);
   const {
     application: { navigateToUrl },
     http: { basePath },
@@ -73,7 +73,11 @@ export function SloAlertsWrapper({
   }, [isSummaryLoaded, isTableLoaded, onRenderComplete]);
   const handleGoToAlertsClick = () => {
     const kuery = slos
-      .map((slo) => `(slo.id:"${slo.slo_id}" and slo.instanceId:"${slo.slo_instance_id}")`)
+      .map((slo) =>
+        slo.slo_instance_id === ALL_VALUE
+          ? `slo.id:"${slo.slo_id}"`
+          : `(slo.id:"${slo.slo_id}" and slo.instanceId:"${slo.slo_instance_id}")`
+      )
       .join(' or ');
 
     navigateToUrl(
@@ -104,7 +108,7 @@ export function SloAlertsWrapper({
             }}
             data-test-subj="o11ySloAlertsWrapperSlOsIncludedLink"
           >
-            {showAllGroupByInstances ? (
+            {showSloIncludedCount ? (
               <SloIncludedCount slos={slos} />
             ) : (
               i18n.translate('xpack.slo.sloAlertsWrapper.sLOsIncludedFlexItemLabel', {
@@ -137,7 +141,6 @@ export function SloAlertsWrapper({
             deps={deps}
             timeRange={timeRange}
             onLoaded={() => setIsSummaryLoaded(true)}
-            showAllGroupByInstances={showAllGroupByInstances}
           />
         </EuiFlexItem>
         <EuiFlexItem grow={true}>
@@ -147,7 +150,6 @@ export function SloAlertsWrapper({
             timeRange={timeRange}
             onLoaded={() => setIsTableLoaded(true)}
             lastReloadRequestTime={lastRefreshTime}
-            showAllGroupByInstances={showAllGroupByInstances}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
