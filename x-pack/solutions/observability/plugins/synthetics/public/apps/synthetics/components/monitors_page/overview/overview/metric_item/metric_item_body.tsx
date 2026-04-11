@@ -8,8 +8,9 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { TagsList } from '@kbn/observability-shared-plugin/public';
-import { EuiFlexItem, EuiSpacer } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import { MonitorTypeBadge } from '../../../../common/components/monitor_type_badge';
+import { MonitorRemoteBadge } from '../../../../common/components/monitor_remote_badge';
 import * as labels from '../../../management/monitor_list_table/labels';
 import type { OverviewStatusMetaData } from '../../../../../../../../common/runtime_types';
 
@@ -28,11 +29,21 @@ export const MetricItemBody = ({ monitor }: { monitor: OverviewStatusMetaData })
       }}
     />
   );
+
+  const badges = (
+    <>
+      <EuiFlexItem grow={false}>{typeBadge}</EuiFlexItem>
+      {monitor.remote && <MonitorRemoteBadge remote={monitor.remote} configId={monitor.configId} />}
+    </>
+  );
+
   if (tags.length === 0) {
     return (
       <>
         <EuiSpacer size="xs" />
-        {typeBadge}
+        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} wrap>
+          {badges}
+        </EuiFlexGroup>
       </>
     );
   }
@@ -42,7 +53,7 @@ export const MetricItemBody = ({ monitor }: { monitor: OverviewStatusMetaData })
       <EuiSpacer size="xs" />
       {(tags ?? []).length > 0 && (
         <TagsList
-          prependChildren={<EuiFlexItem grow={false}>{typeBadge}</EuiFlexItem>}
+          prependChildren={badges}
           color="default"
           tags={tags}
           disableExpand={true}

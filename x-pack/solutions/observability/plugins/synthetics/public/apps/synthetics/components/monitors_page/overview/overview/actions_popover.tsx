@@ -203,6 +203,8 @@ export function ActionsPopover({
   });
 
   const alertLoading = alertStatus(monitor.configId) === FETCH_STATUS.LOADING;
+  const isRemoteMonitor = !!monitor.remote;
+
   let popoverItems: EuiContextMenuPanelItemDescriptor[] = [
     {
       name: actionsMenuGoToMonitorName,
@@ -211,121 +213,127 @@ export function ActionsPopover({
       'data-test-subj': 'actionsPopoverGoToMonitor',
     },
     quickInspectPopoverItem,
-    {
-      name: testInProgress ? (
-        <EuiToolTip content={TEST_SCHEDULED_LABEL}>
-          <span tabIndex={0}>{runTestManually}</span>
-        </EuiToolTip>
-      ) : (
-        <NoPermissionsTooltip
-          canUsePublicLocations={canUsePublicLocations}
-          canEditSynthetics={canEditSynthetics}
-        >
-          {runTestManually}
-        </NoPermissionsTooltip>
-      ),
-      icon: 'flask',
-      disabled: testInProgress || !canUsePublicLocations || !isServiceAllowed,
-      onClick: () => {
-        dispatch(manualTestMonitorAction.get({ configId: monitor.configId, name: monitor.name }));
-        dispatch(setFlyoutConfig(null));
-        setIsPopoverOpen(false);
-      },
-    },
-    {
-      name: (
-        <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
-          {actionsMenuEditMonitorName}
-        </NoPermissionsTooltip>
-      ),
-      icon: 'pencil',
-      disabled: !canEditSynthetics || !isServiceAllowed,
-      href: editUrl,
-      'data-test-subj': 'editMonitorLink',
-    },
-    {
-      name: (
-        <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
-          {actionsMenuCloneMonitorName}
-        </NoPermissionsTooltip>
-      ),
-      icon: 'copy',
-      disabled: !canEditSynthetics || !isServiceAllowed,
-      href: http?.basePath.prepend(`synthetics/add-monitor?cloneId=${monitor.configId}`),
-      'data-test-subj': 'cloneMonitorLink',
-    },
-    {
-      name: (
-        <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
-          {CREATE_SLO}
-        </NoPermissionsTooltip>
-      ),
-      icon: 'chartGauge',
-      disabled: !canEditSynthetics || !isServiceAllowed,
-      onClick: () => {
-        setIsPopoverOpen(false);
-        setIsSLOFlyoutOpen(true);
-      },
-      'data-test-subj': 'createSLOBtn',
-    },
-    {
-      name: (
-        <NoPermissionsTooltip
-          canEditSynthetics={canEditSynthetics}
-          canUsePublicLocations={canUsePublicLocations}
-        >
-          {enableLabel}
-        </NoPermissionsTooltip>
-      ),
-      icon: 'contrast',
-      disabled: !canEditSynthetics || !canUsePublicLocations,
-      onClick: () => {
-        if (status !== FETCH_STATUS.LOADING) {
-          updateMonitorEnabledState(!monitor.isEnabled);
-        }
-      },
-    },
-    {
-      name: (
-        <NoPermissionsTooltip
-          canEditSynthetics={canEditSynthetics}
-          canUsePublicLocations={canUsePublicLocations}
-        >
-          {monitor.isStatusAlertEnabled ? disableAlertLabel : enableMonitorAlertLabel}
-        </NoPermissionsTooltip>
-      ),
-      disabled: !canEditSynthetics || !canUsePublicLocations || !isServiceAllowed,
-      icon: alertLoading ? (
-        <EuiLoadingSpinner size="s" />
-      ) : monitor.isStatusAlertEnabled ? (
-        'bellSlash'
-      ) : (
-        'bell'
-      ),
-      onClick: () => {
-        if (!alertLoading) {
-          updateAlertEnabledState({
-            monitor: {
-              [ConfigKey.ALERT_CONFIG]: toggleStatusAlert({
-                status: {
-                  enabled: monitor.isStatusAlertEnabled,
-                },
-              }),
+    ...(!isRemoteMonitor
+      ? ([
+          {
+            name: testInProgress ? (
+              <EuiToolTip content={TEST_SCHEDULED_LABEL}>
+                <span tabIndex={0}>{runTestManually}</span>
+              </EuiToolTip>
+            ) : (
+              <NoPermissionsTooltip
+                canUsePublicLocations={canUsePublicLocations}
+                canEditSynthetics={canEditSynthetics}
+              >
+                {runTestManually}
+              </NoPermissionsTooltip>
+            ),
+            icon: 'flask',
+            disabled: testInProgress || !canUsePublicLocations || !isServiceAllowed,
+            onClick: () => {
+              dispatch(
+                manualTestMonitorAction.get({ configId: monitor.configId, name: monitor.name })
+              );
+              dispatch(setFlyoutConfig(null));
+              setIsPopoverOpen(false);
             },
-            configId: monitor.configId,
-            name: monitor.name,
-          });
-        }
-      },
-    },
-    {
-      name: addMonitorToDashboardLabel,
-      icon: 'dashboardApp',
-      onClick: () => {
-        setIsPopoverOpen(false);
-        setDashboardAttachmentReady(true);
-      },
-    },
+          },
+          {
+            name: (
+              <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
+                {actionsMenuEditMonitorName}
+              </NoPermissionsTooltip>
+            ),
+            icon: 'pencil',
+            disabled: !canEditSynthetics || !isServiceAllowed,
+            href: editUrl,
+            'data-test-subj': 'editMonitorLink',
+          },
+          {
+            name: (
+              <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
+                {actionsMenuCloneMonitorName}
+              </NoPermissionsTooltip>
+            ),
+            icon: 'copy',
+            disabled: !canEditSynthetics || !isServiceAllowed,
+            href: http?.basePath.prepend(`synthetics/add-monitor?cloneId=${monitor.configId}`),
+            'data-test-subj': 'cloneMonitorLink',
+          },
+          {
+            name: (
+              <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
+                {CREATE_SLO}
+              </NoPermissionsTooltip>
+            ),
+            icon: 'chartGauge',
+            disabled: !canEditSynthetics || !isServiceAllowed,
+            onClick: () => {
+              setIsPopoverOpen(false);
+              setIsSLOFlyoutOpen(true);
+            },
+            'data-test-subj': 'createSLOBtn',
+          },
+          {
+            name: (
+              <NoPermissionsTooltip
+                canEditSynthetics={canEditSynthetics}
+                canUsePublicLocations={canUsePublicLocations}
+              >
+                {enableLabel}
+              </NoPermissionsTooltip>
+            ),
+            icon: 'contrast',
+            disabled: !canEditSynthetics || !canUsePublicLocations,
+            onClick: () => {
+              if (status !== FETCH_STATUS.LOADING) {
+                updateMonitorEnabledState(!monitor.isEnabled);
+              }
+            },
+          },
+          {
+            name: (
+              <NoPermissionsTooltip
+                canEditSynthetics={canEditSynthetics}
+                canUsePublicLocations={canUsePublicLocations}
+              >
+                {monitor.isStatusAlertEnabled ? disableAlertLabel : enableMonitorAlertLabel}
+              </NoPermissionsTooltip>
+            ),
+            disabled: !canEditSynthetics || !canUsePublicLocations || !isServiceAllowed,
+            icon: alertLoading ? (
+              <EuiLoadingSpinner size="s" />
+            ) : monitor.isStatusAlertEnabled ? (
+              'bellSlash'
+            ) : (
+              'bell'
+            ),
+            onClick: () => {
+              if (!alertLoading) {
+                updateAlertEnabledState({
+                  monitor: {
+                    [ConfigKey.ALERT_CONFIG]: toggleStatusAlert({
+                      status: {
+                        enabled: monitor.isStatusAlertEnabled,
+                      },
+                    }),
+                  },
+                  configId: monitor.configId,
+                  name: monitor.name,
+                });
+              }
+            },
+          },
+          {
+            name: addMonitorToDashboardLabel,
+            icon: 'dashboardApp',
+            onClick: () => {
+              setIsPopoverOpen(false);
+              setDashboardAttachmentReady(true);
+            },
+          },
+        ] as EuiContextMenuPanelItemDescriptor[])
+      : []),
   ];
   if (isInspectView) popoverItems = popoverItems.filter((i) => i !== quickInspectPopoverItem);
 

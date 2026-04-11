@@ -19,6 +19,7 @@ import { MonitorBarSeries } from '../components/monitor_bar_series';
 import { useMonitorHistogram } from '../../../../hooks/use_monitor_histogram';
 import type { OverviewStatusMetaData } from '../../../../../../../../../common/runtime_types';
 import { MonitorTypeBadge } from '../../../../../common/components/monitor_type_badge';
+import { MonitorRemoteBadge } from '../../../../../common/components/monitor_remote_badge';
 import { getFilterForTypeMessage } from '../../../../management/monitor_list_table/labels';
 import type { FlyoutParamProps } from '../../types';
 import { MonitorsActions } from '../components/monitors_actions';
@@ -104,9 +105,16 @@ export const useMonitorsTableColumns = ({
             className="clickCellContent"
           >
             <EuiFlexItem>
-              <EuiText size="s" onClick={() => openFlyout(monitor)}>
-                {name}
-              </EuiText>
+              <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiText size="s" onClick={() => openFlyout(monitor)}>
+                    {name}
+                  </EuiText>
+                </EuiFlexItem>
+                {monitor.remote && (
+                  <MonitorRemoteBadge remote={monitor.remote} configId={monitor.configId} />
+                )}
+              </EuiFlexGroup>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <MonitorTypeBadge

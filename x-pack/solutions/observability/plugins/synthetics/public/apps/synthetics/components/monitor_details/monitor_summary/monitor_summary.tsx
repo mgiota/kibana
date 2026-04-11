@@ -19,11 +19,13 @@ import { i18n } from '@kbn/i18n';
 import { useParams } from 'react-router-dom';
 import { LoadWhenInView } from '@kbn/observability-shared-plugin/public';
 import { MonitorMWsCallout } from '../../common/mws_callout/monitor_mws_callout';
+import { MonitorRemoteCallout } from '../../common/components/monitor_remote_callout';
 import { MissingIntegrationCallout } from '../../monitor_add_edit/steps/missing_integration_callout';
 import { SummaryPanel } from './summary_panel';
 
 import { useMonitorDetailsPage } from '../use_monitor_details_page';
 import { useMonitorRangeFrom } from '../hooks/use_monitor_range_from';
+import { useMonitorRemoteInfo } from '../hooks/use_monitor_remote_info';
 import { MonitorAlerts } from './monitor_alerts';
 import { MonitorStatusPanel } from '../monitor_status/monitor_status_panel';
 import { MonitorDurationTrend } from './duration_trend';
@@ -37,6 +39,7 @@ import { useMonitorAttachmentConfig } from '../hooks/use_monitor_attachment_conf
 export const MonitorSummary = () => {
   const { monitorId: configId } = useParams<{ monitorId: string }>();
   const { from, to } = useMonitorRangeFrom();
+  const remoteInfo = useMonitorRemoteInfo(configId);
 
   const dateLabel = from === 'now-30d/d' ? LAST_30_DAYS_LABEL : TO_DATE_LABEL;
   const isMediumDevice = useIsWithinBreakpoints(['xs', 's', 'm', 'l']);
@@ -52,6 +55,12 @@ export const MonitorSummary = () => {
   return (
     <>
       <MissingIntegrationCallout configId={configId} />
+      {remoteInfo && (
+        <>
+          <MonitorRemoteCallout remote={remoteInfo} configId={configId} />
+          <EuiSpacer size="m" />
+        </>
+      )}
       <MonitorPendingWrapper>
         <MonitorMWsCallout />
         <SummaryPanel dateLabel={dateLabel} from={from} to={to} />
