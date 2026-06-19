@@ -94,6 +94,25 @@ describe('useLatestError', () => {
       expect(dispatched.payload).toEqual({ monitorId: 'cfg-1', locationLabel: 'US East' });
     });
 
+    it('dispatches with `monitorQueryId` (not `configId`) so project monitors with a custom_heartbeat_id match the heartbeat doc', () => {
+      setSelectorState({ popoverOpenForCfg: 'cfg-project-us-east' });
+      const projectMonitor = {
+        ...baseMonitor,
+        configId: 'cfg-project',
+        monitorQueryId: 'custom-heartbeat-id',
+      } as unknown as OverviewStatusMetaData;
+
+      renderHook(() =>
+        useLatestError({ monitor: projectMonitor, configIdByLocation: 'cfg-project-us-east' })
+      );
+
+      expect(mockDispatch).toHaveBeenCalledTimes(1);
+      expect(mockDispatch.mock.calls[0][0].payload).toEqual({
+        monitorId: 'custom-heartbeat-id',
+        locationLabel: 'US East',
+      });
+    });
+
     it('does NOT dispatch when the popover is open for a different monitor', () => {
       setSelectorState({ popoverOpenForCfg: 'cfg-other-us-east' });
 

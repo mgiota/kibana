@@ -36,8 +36,10 @@ export const useLatestError = ({ monitor, configIdByLocation }: UseMonitorLatest
 
   // `monitorQueryId` (not `configId`) matches the heartbeat doc's `monitor.id`;
   // they diverge for project monitors with a `custom_heartbeat_id`.
+  const monitorQueryId = monitor.monitorQueryId;
+
   const remote = useRemoteMonitorLatestError({
-    monitorId: monitor.monitorQueryId,
+    monitorId: monitorQueryId,
     locationLabel,
     remoteName,
     enabled: isRemote && isOpenForThisMonitor,
@@ -48,9 +50,9 @@ export const useLatestError = ({ monitor, configIdByLocation }: UseMonitorLatest
     // Local SO-backed route can't see remote heartbeat indices; remote monitors
     // are handled by `useRemoteMonitorLatestError` above.
     if (!isRemote && locationLabel && isOpenForThisMonitor) {
-      dispatch(getMonitorLastErrorRunAction.get({ monitorId: monitor.configId, locationLabel }));
+      dispatch(getMonitorLastErrorRunAction.get({ monitorId: monitorQueryId, locationLabel }));
     }
-  }, [dispatch, lastRefresh, isOpenForThisMonitor, isRemote, locationLabel, monitor.configId]);
+  }, [dispatch, lastRefresh, isOpenForThisMonitor, isRemote, locationLabel, monitorQueryId]);
 
   if (isRemote) {
     return remote;
