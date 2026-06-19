@@ -15,6 +15,7 @@ import createSagaMiddleware from 'redux-saga';
 
 import { rootReducer } from '../../../state/root_reducer';
 import { rootEffect } from '../../../state/root_effect';
+import { selectErrorPopoverState, toggleErrorPopoverOpen } from '../../../state';
 
 const mockUseOverviewStatus = jest.fn((_opts?: { scopeStatusByLocation: boolean }) => ({
   status: undefined,
@@ -137,5 +138,23 @@ describe('OverviewPage wiring', () => {
     );
 
     expect(mockUseOverviewStatus).toHaveBeenCalledWith({ scopeStatusByLocation: true });
+  });
+
+  it('clears stale error-popover state on mount so back navigation from /errors does not auto-reopen the popover', () => {
+    const store = buildStore();
+    store.dispatch(toggleErrorPopoverOpen('cfg-1-us-east'));
+    expect(selectErrorPopoverState(store.getState())).toBe('cfg-1-us-east');
+
+    const history = createMemoryHistory({ initialEntries: ['/overview'] });
+
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <OverviewPage />
+        </Router>
+      </Provider>
+    );
+
+    expect(selectErrorPopoverState(store.getState())).toBeNull();
   });
 });

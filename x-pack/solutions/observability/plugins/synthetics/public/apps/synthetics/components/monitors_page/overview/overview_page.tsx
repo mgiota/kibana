@@ -13,7 +13,11 @@ import { DisabledCallout } from '../management/disabled_callout';
 import { FilterGroup } from '../common/monitor_filters/filter_group';
 import { OverviewAlerts } from './overview/overview_alerts';
 import { useEnablement } from '../../../hooks';
-import { selectOverviewState, selectServiceLocationsState } from '../../../state';
+import {
+  selectOverviewState,
+  selectServiceLocationsState,
+  toggleErrorPopoverOpen,
+} from '../../../state';
 import { getServiceLocations } from '../../../state/service_locations';
 import { GETTING_STARTED_ROUTE, MONITORS_ROUTE } from '../../../../../../common/constants';
 
@@ -51,6 +55,13 @@ export const OverviewPage: React.FC = () => {
       dispatch(getServiceLocations());
     }
   }, [dispatch, locationsLoaded, locationsLoading]);
+
+  // Reset stale popover state on mount: the Redux store persists across SPA
+  // route changes, so navigating Error details → browser back would otherwise
+  // re-open whichever popover was last open against `configIdByLocation`.
+  useEffect(() => {
+    dispatch(toggleErrorPopoverOpen(null));
+  }, [dispatch]);
 
   const { isEnabled, loading: enablementLoading } = useEnablement();
 
