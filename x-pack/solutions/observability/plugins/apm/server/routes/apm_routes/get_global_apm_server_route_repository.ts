@@ -35,6 +35,7 @@ import { serviceMapRouteRepository } from '../service_map/route';
 import { agentConfigurationRouteRepository } from '../settings/agent_configuration/route';
 import { anomalyDetectionRouteRepository } from '../settings/anomaly_detection/route';
 import { customLinkRouteRepository } from '../settings/custom_link/route';
+import { tailSamplingRouteRepository } from '../settings/tail_sampling/route';
 import { sourceMapsRouteRepository } from '../source_maps/route';
 import { spanLinksRouteRepository } from '../span_links/route';
 import { storageExplorerRouteRepository } from '../storage_explorer/route';
@@ -63,6 +64,7 @@ function getTypedGlobalApmServerRouteRepository() {
     ...agentConfigurationRouteRepository,
     ...anomalyDetectionRouteRepository,
     ...customLinkRouteRepository,
+    ...tailSamplingRouteRepository,
     ...sourceMapsRouteRepository,
     ...apmFleetRouteRepository,
     ...dependencisRouteRepository,
