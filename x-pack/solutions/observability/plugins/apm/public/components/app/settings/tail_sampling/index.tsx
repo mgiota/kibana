@@ -22,7 +22,8 @@ export function TailSamplingSettings() {
   const { data, status } = useFetcher(
     (callApmApi) => callApmApi('GET /internal/tail_sampling'),
     [],
-    { preservePreviousData: true }
+    // The settings are not time-based, so a time range refresh must not refetch them.
+    { preservePreviousData: true, skipTimeRangeRefreshUpdate: true }
   );
 
   return (
