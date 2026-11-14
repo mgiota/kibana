@@ -20,6 +20,7 @@ import { ApmIndices } from '../../app/settings/apm_indices';
 import { CustomLinkOverview } from '../../app/settings/custom_link';
 import { GeneralSettings } from '../../app/settings/general_settings';
 import { Schema } from '../../app/settings/schema';
+import { TailSamplingSettings } from '../../app/settings/tail_sampling';
 import { SettingsTemplate } from '../templates/settings_template';
 import { CreateAgentConfigurationRouteView } from './create_agent_configuration_route_view';
 import { EditAgentConfigurationRouteView } from './edit_agent_configuration_route_view';
@@ -145,6 +146,13 @@ export const settingsRoute = {
         }),
         element: <AnomalyDetection />,
         tab: 'anomaly-detection',
+      }),
+      '/settings/tail-based-sampling': page({
+        title: i18n.translate('xpack.apm.views.settings.tailBasedSampling.title', {
+          defaultMessage: 'Tail-based sampling',
+        }),
+        element: <TailSamplingSettings />,
+        tab: 'tail-based-sampling',
       }),
       '/settings/agent-keys': page({
         title: i18n.translate('xpack.apm.views.settings.agentKeys.title', {

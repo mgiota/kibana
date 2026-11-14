@@ -26,6 +26,7 @@ type Tab = AppHeaderTab & {
     | 'apm-indices'
     | 'custom-links'
     | 'schema'
+    | 'tail-based-sampling'
     | 'general-settings'
     | 'agent-explorer';
   hidden?: boolean;
@@ -46,6 +47,9 @@ export function SettingsTemplate({ children, selectedTab }: Props) {
   );
   const migrationToFleetAvailable = useApmFeatureFlag(ApmFeatureFlagName.MigrationToFleetAvailable);
   const indicesAvailable = useApmFeatureFlag(ApmFeatureFlagName.ConfigurableIndicesAvailable);
+  const managedTailSamplingAvailable = useApmFeatureFlag(
+    ApmFeatureFlagName.ManagedTailSamplingAvailable
+  );
 
   const tabs = getTabs({
     core,
@@ -55,6 +59,7 @@ export function SettingsTemplate({ children, selectedTab }: Props) {
     agentConfigurationAvailable,
     migrationToFleetAvailable,
     indicesAvailable,
+    managedTailSamplingAvailable,
   });
 
   return (
@@ -79,6 +84,7 @@ function getTabs({
   agentConfigurationAvailable,
   migrationToFleetAvailable,
   indicesAvailable,
+  managedTailSamplingAvailable,
 }: {
   core: CoreStart;
   selectedTab: Tab['key'];
@@ -87,6 +93,7 @@ function getTabs({
   agentConfigurationAvailable: boolean;
   migrationToFleetAvailable: boolean;
   indicesAvailable: boolean;
+  managedTailSamplingAvailable: boolean;
 }): AppHeaderTab[] {
   const canReadMlJobs = !!core.application.capabilities.ml?.canGetJobs;
 
@@ -156,6 +163,16 @@ function getTabs({
       }),
       href: router.link('/settings/custom-links'),
       'data-test-subj': 'apmSettingsTab_custom-links',
+    },
+    {
+      key: 'tail-based-sampling',
+      id: 'tail-based-sampling',
+      label: i18n.translate('xpack.apm.settings.tailBasedSampling', {
+        defaultMessage: 'Tail-based sampling',
+      }),
+      href: router.link('/settings/tail-based-sampling'),
+      hidden: !managedTailSamplingAvailable,
+      'data-test-subj': 'apmSettingsTab_tail-based-sampling',
     },
     ...(indicesAvailable
       ? [
