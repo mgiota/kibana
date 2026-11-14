@@ -7,6 +7,7 @@
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import type { APMRouteHandlerResources } from '../../apm_routes/register_apm_server_routes';
 import { LocalTailSamplingControlApi, getTailSamplingControlApi } from './control_api';
+import { getPoliciesHash } from './get_policies_hash';
 import { tailSamplingRouteRepository } from './route';
 import {
   InMemoryTailSamplingStore,
@@ -157,6 +158,147 @@ describe('tail sampling routes', () => {
     it('writes nothing', async () => {
       await route.handler(getValidateResources({ body: body({ policies }) }));
       expect(await store.get()).toBeUndefined();
+    });
+  });
+
+  describe('PUT /internal/tail_sampling', () => {
+    const route = tailSamplingRouteRepository['PUT /internal/tail_sampling'];
+    type SaveResources = Parameters<typeof route.handler>[0];
+    const getSaveResources = (overrides: { flag?: boolean; body: unknown }) =>
+      getResources(overrides) as SaveResources;
+
+    const validHash = getPoliciesHash(policies);
+    const saveBody = (extra: Record<string, unknown> = {}) => ({
+      processor: 'tail_sampling',
+      config: { policies },
+      validatedHash: validHash,
+      ...extra,
+    });
+    const getControlApi = () => getTailSamplingControlApi(loggingSystemMock.createLogger());
+
+    it('returns 404 when the feature flag is off', async () => {
+      await expect(
+        route.handler(getSaveResources({ flag: false, body: saveBody() }))
+      ).rejects.toMatchObject({ output: { statusCode: 404 } });
+    });
+
+    it('saves the config as enabled and returns it', async () => {
+      const result = await route.handler(getSaveResources({ body: saveBody() }));
+      expect(result).toMatchObject({
+        saved: true,
+        enabled: true,
+        processor: 'tail_sampling',
+        config: { policies },
+        hash: validHash,
+        updatedBy: 'elastic',
+      });
+      expect(await store.get()).toMatchObject({ enabled: true, configHash: validHash });
+    });
+
+    it('applies the config through the control API', async () => {
+      const apply = jest.spyOn(getControlApi(), 'apply');
+      await route.handler(getSaveResources({ body: saveBody() }));
+      expect(apply).toHaveBeenCalledWith({ policies }, validHash);
+    });
+
+    it('returns 409 and writes nothing when the validated hash is stale', async () => {
+      const apply = jest.spyOn(getControlApi(), 'apply');
+      await expect(
+        route.handler(getSaveResources({ body: saveBody({ validatedHash: 'stale' }) }))
+      ).rejects.toMatchObject({ output: { statusCode: 409 } });
+      expect(await store.get()).toBeUndefined();
+      expect(apply).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 and writes nothing when the config is invalid', async () => {
+      const invalid = [{ name: 'bad', type: 'nope' }];
+      await expect(
+        route.handler(
+          getSaveResources({
+            body: saveBody({
+              config: { policies: invalid },
+              validatedHash: getPoliciesHash(invalid),
+            }),
+          })
+        )
+      ).rejects.toMatchObject({ output: { statusCode: 400 } });
+      expect(await store.get()).toBeUndefined();
+    });
+
+    it('saves when the version matches', async () => {
+      const first = await store.save(stored);
+      const result = await route.handler(
+        getSaveResources({ body: saveBody({ version: first.version }) })
+      );
+      expect(result).toMatchObject({ saved: true, hash: validHash });
+      expect(result.version).not.toBe(first.version);
+    });
+
+    it('returns 409 and keeps the stored config when the version is stale', async () => {
+      const first = await store.save(stored);
+      const second = await store.save(stored);
+      await expect(
+        route.handler(getSaveResources({ body: saveBody({ version: first.version }) }))
+      ).rejects.toMatchObject({ output: { statusCode: 409 } });
+      expect(await store.get()).toEqual(second);
+    });
+
+    it('still saves when the control API call fails, and logs a warning', async () => {
+      jest.spyOn(getControlApi(), 'apply').mockRejectedValue(new Error('unreachable'));
+      const resources = getSaveResources({ body: saveBody() });
+      const result = await route.handler(resources);
+      expect(result).toMatchObject({ saved: true, enabled: true });
+      expect(await store.get()).toMatchObject({ configHash: validHash });
+      expect(resources.logger.warn).toHaveBeenCalledWith(expect.stringContaining('unreachable'));
+    });
+  });
+
+  describe('POST /internal/tail_sampling/_disable', () => {
+    const route = tailSamplingRouteRepository['POST /internal/tail_sampling/_disable'];
+    const getControlApi = () => getTailSamplingControlApi(loggingSystemMock.createLogger());
+
+    it('returns 404 when the feature flag is off', async () => {
+      await expect(route.handler(getResources({ flag: false }))).rejects.toMatchObject({
+        output: { statusCode: 404 },
+      });
+    });
+
+    it('returns the empty state and does nothing when nothing is saved', async () => {
+      const deactivate = jest.spyOn(getControlApi(), 'deactivate');
+      expect(await route.handler(getResources())).toMatchObject({ saved: false, enabled: false });
+      expect(deactivate).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when sampling is already off', async () => {
+      const disabled = await store.save({ ...stored, enabled: false });
+      const deactivate = jest.spyOn(getControlApi(), 'deactivate');
+      expect(await route.handler(getResources())).toMatchObject({
+        enabled: false,
+        version: disabled.version,
+      });
+      expect(deactivate).not.toHaveBeenCalled();
+    });
+
+    it('turns sampling off, keeps the config and deactivates', async () => {
+      await store.save(stored);
+      const deactivate = jest.spyOn(getControlApi(), 'deactivate');
+      const result = await route.handler(getResources());
+      expect(result).toMatchObject({
+        saved: true,
+        enabled: false,
+        config: { policies },
+        hash: 'hash-1',
+      });
+      expect(await store.get()).toMatchObject({ enabled: false, config: { policies } });
+      expect(deactivate).toHaveBeenCalledTimes(1);
+    });
+
+    it('still disables when the control API call fails, and logs a warning', async () => {
+      await store.save(stored);
+      jest.spyOn(getControlApi(), 'deactivate').mockRejectedValue(new Error('unreachable'));
+      const resources = getResources();
+      expect(await route.handler(resources)).toMatchObject({ enabled: false });
+      expect(resources.logger.warn).toHaveBeenCalledWith(expect.stringContaining('unreachable'));
     });
   });
 });
