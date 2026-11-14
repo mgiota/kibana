@@ -16,6 +16,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import React from 'react';
 import { FETCH_STATUS, useFetcher } from '../../../../hooks/use_fetcher';
+import { PoliciesTab } from './policies/policies_tab';
 
 export function TailSamplingSettings() {
   const { data, status } = useFetcher(
@@ -76,19 +77,23 @@ export function TailSamplingSettings() {
           }
         />
       ) : (
-        <EuiText size="s" data-test-subj="apmTailSamplingSummary">
-          <p>
-            {data.enabled
-              ? i18n.translate('xpack.apm.tailSampling.summary.enabled', {
-                  defaultMessage: 'Tail-based sampling is on with {count} saved policies.',
-                  values: { count: data.config.policies.length },
-                })
-              : i18n.translate('xpack.apm.tailSampling.summary.disabled', {
-                  defaultMessage: 'Tail-based sampling is off. {count} saved policies are kept.',
-                  values: { count: data.config.policies.length },
-                })}
-          </p>
-        </EuiText>
+        <>
+          <EuiText size="s" data-test-subj="apmTailSamplingSummary">
+            <p>
+              {data.enabled
+                ? i18n.translate('xpack.apm.tailSampling.summary.enabled', {
+                    defaultMessage: 'Tail-based sampling is on with {count} saved policies.',
+                    values: { count: data.config.policies.length },
+                  })
+                : i18n.translate('xpack.apm.tailSampling.summary.disabled', {
+                    defaultMessage: 'Tail-based sampling is off. {count} saved policies are kept.',
+                    values: { count: data.config.policies.length },
+                  })}
+            </p>
+          </EuiText>
+          <EuiSpacer size="m" />
+          <PoliciesTab policies={data.config.policies} />
+        </>
       )}
     </>
   );
