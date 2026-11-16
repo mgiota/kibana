@@ -201,7 +201,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
         </React.Fragment>
       ))}
 
-      {policies.length === 0 ? (
+      {policies.length === 0 && !saved.saved ? (
         <EuiEmptyPrompt
           data-test-subj="apmTailSamplingEmpty"
           iconType="flask"
