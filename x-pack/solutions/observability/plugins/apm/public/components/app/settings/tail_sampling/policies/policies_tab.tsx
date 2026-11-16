@@ -7,6 +7,8 @@
 
 import {
   EuiButton,
+  EuiButtonEmpty,
+  EuiCallOut,
   EuiContextMenuItem,
   EuiContextMenuPanel,
   EuiEmptyPrompt,
@@ -17,20 +19,120 @@ import {
   EuiText,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { TailSamplingPolicy } from '@kbn/apm-api-shared';
-import React, { useState } from 'react';
+import {
+  TAIL_SAMPLING_PROCESSOR,
+  type TailSamplingPolicy,
+  type TailSamplingResponse,
+  type ValidateTailSamplingResponse,
+} from '@kbn/apm-api-shared';
+import React, { useMemo, useState } from 'react';
+import {
+  normalizeTailSamplingConfig,
+  validateTailSamplingPolicies,
+} from '../../../../../../common/tail_sampling';
+import { useApmPluginContext } from '../../../../../context/apm_plugin/use_apm_plugin_context';
+import { getApmInternalServices } from '../../../../../plugin';
 import { createFormPolicy, formPolicyKinds, formPolicyLabels } from './form_policy';
 import { PolicyCard } from './policy_card';
 
 interface Props {
-  initialPolicies: TailSamplingPolicy[];
+  saved: TailSamplingResponse;
+  onSaved: (response: TailSamplingResponse) => void;
 }
 
-export function PoliciesTab({ initialPolicies }: Props) {
-  const [policies, setPolicies] = useState<TailSamplingPolicy[]>(initialPolicies);
+const formatPath = (path?: Array<string | number>) => (path?.length ? path.join('.') : undefined);
+
+export function PoliciesTab({ saved, onSaved }: Props) {
+  const { core } = useApmPluginContext();
+  const savedPolicies = saved.config.policies;
+  const [policies, setPolicies] = useState<TailSamplingPolicy[]>(savedPolicies);
+  const [validation, setValidation] = useState<{
+    draftKey: string;
+    response: ValidateTailSamplingResponse;
+  }>();
+  const [isValidating, setIsValidating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
+  const draftKey = JSON.stringify(policies);
+  const localDiagnostics = useMemo(() => validateTailSamplingPolicies(policies), [policies]);
+  const serverValidation = validation?.draftKey === draftKey ? validation.response : undefined;
+  const diagnostics = serverValidation?.diagnostics ?? localDiagnostics;
+  const warnings = serverValidation?.warnings ?? [];
+  // Saved policies are stored normalized, so compare normalized forms.
+  const isUnchanged =
+    saved.saved &&
+    saved.enabled &&
+    JSON.stringify(normalizeTailSamplingConfig(policies)) ===
+      JSON.stringify(normalizeTailSamplingConfig(savedPolicies));
+  const canSave = !!serverValidation?.valid && !isUnchanged;
+
   const policyNames = policies.map(({ name }) => String(name ?? ''));
+
+  const updatePolicies = (next: TailSamplingPolicy[]) => {
+    setPolicies(next);
+  };
+
+  const validate = async () => {
+    setIsValidating(true);
+    try {
+      const { callApmApi } = getApmInternalServices();
+      const response = await callApmApi('POST /internal/tail_sampling/_validate', {
+        signal: null,
+        params: {
+          body: { processor: TAIL_SAMPLING_PROCESSOR, config: { policies } },
+        },
+      });
+      setValidation({ draftKey, response });
+    } catch (error) {
+      core.notifications.toasts.addError(error, {
+        title: i18n.translate('xpack.apm.tailSampling.validate.failed', {
+          defaultMessage: 'Validation is unavailable. The policies were not saved.',
+        }),
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const save = async () => {
+    if (!serverValidation) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { callApmApi } = getApmInternalServices();
+      const response = await callApmApi('PUT /internal/tail_sampling', {
+        signal: null,
+        params: {
+          body: {
+            processor: TAIL_SAMPLING_PROCESSOR,
+            config: { policies },
+            validatedHash: serverValidation.hash,
+            version: saved.version,
+          },
+        },
+      });
+      core.notifications.toasts.addSuccess(
+        i18n.translate('xpack.apm.tailSampling.save.succeeded', {
+          defaultMessage: 'Policies saved.',
+        })
+      );
+      setValidation(undefined);
+      onSaved(response);
+    } catch (error) {
+      core.notifications.toasts.addError(error, {
+        title: i18n.translate('xpack.apm.tailSampling.save.failed', {
+          defaultMessage: 'The policies could not be saved',
+        }),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const globalDiagnostics = diagnostics.filter(({ policyIndex }) => policyIndex === undefined);
+  const globalWarnings = warnings.filter(({ policyIndex }) => policyIndex === undefined);
 
   return (
     <>
@@ -74,7 +176,7 @@ export function PoliciesTab({ initialPolicies }: Props) {
                   data-test-subj={`apmTailSamplingAddPolicy_${kind}`}
                   onClick={() => {
                     setIsAddMenuOpen(false);
-                    setPolicies([...policies, createFormPolicy(kind, policyNames)]);
+                    updatePolicies([...policies, createFormPolicy(kind, policyNames)]);
                   }}
                 >
                   {formPolicyLabels[kind]}
@@ -85,6 +187,19 @@ export function PoliciesTab({ initialPolicies }: Props) {
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="m" />
+
+      {globalDiagnostics.map((diagnostic, index) => (
+        <React.Fragment key={`${diagnostic.code}-${index}`}>
+          <EuiCallOut size="s" iconType="error" color="danger" title={diagnostic.message} />
+          <EuiSpacer size="s" />
+        </React.Fragment>
+      ))}
+      {globalWarnings.map((warning, index) => (
+        <React.Fragment key={`${warning.code}-${index}`}>
+          <EuiCallOut size="s" iconType="warning" color="warning" title={warning.message} />
+          <EuiSpacer size="s" />
+        </React.Fragment>
+      ))}
 
       {policies.length === 0 ? (
         <EuiEmptyPrompt
@@ -111,15 +226,75 @@ export function PoliciesTab({ initialPolicies }: Props) {
             <EuiFlexItem key={index}>
               <PolicyCard
                 policy={policy}
+                diagnostics={diagnostics
+                  .filter(({ policyIndex }) => policyIndex === index)
+                  .map(({ message, path }) => ({ message, path: formatPath(path) }))}
+                warnings={warnings
+                  .filter(({ policyIndex }) => policyIndex === index)
+                  .map(({ message, path }) => ({ message, path: formatPath(path) }))}
                 onChange={(next) =>
-                  setPolicies(policies.map((current, i) => (i === index ? next : current)))
+                  updatePolicies(policies.map((current, i) => (i === index ? next : current)))
                 }
-                onRemove={() => setPolicies(policies.filter((_, i) => i !== index))}
+                onRemove={() => updatePolicies(policies.filter((_, i) => i !== index))}
               />
             </EuiFlexItem>
           ))}
         </EuiFlexGroup>
       )}
+
+      <EuiSpacer size="l" />
+      <EuiFlexGroup justifyContent="flexEnd" alignItems="center" gutterSize="s">
+        {serverValidation?.valid && (
+          <EuiFlexItem grow={false}>
+            <EuiText size="xs" color="success" data-test-subj="apmTailSamplingValidated">
+              {i18n.translate('xpack.apm.tailSampling.validated', {
+                defaultMessage: 'Validated, hash {hash}',
+                values: { hash: serverValidation.hash.slice(0, 8) },
+              })}
+            </EuiText>
+          </EuiFlexItem>
+        )}
+        <EuiFlexItem grow={false}>
+          <EuiButtonEmpty
+            data-test-subj="apmTailSamplingRevert"
+            onClick={() => {
+              updatePolicies(savedPolicies);
+              setValidation(undefined);
+            }}
+          >
+            {i18n.translate('xpack.apm.tailSampling.revert', {
+              defaultMessage: 'Revert changes',
+            })}
+          </EuiButtonEmpty>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiButton
+            data-test-subj="apmTailSamplingValidate"
+            isLoading={isValidating}
+            isDisabled={localDiagnostics.length > 0 || !!serverValidation}
+            onClick={validate}
+          >
+            {i18n.translate('xpack.apm.tailSampling.validate', { defaultMessage: 'Validate' })}
+          </EuiButton>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiButton
+            data-test-subj="apmTailSamplingSave"
+            fill
+            isLoading={isSaving}
+            isDisabled={!canSave}
+            onClick={save}
+          >
+            {saved.enabled
+              ? i18n.translate('xpack.apm.tailSampling.saveAndApply', {
+                  defaultMessage: 'Save and apply',
+                })
+              : i18n.translate('xpack.apm.tailSampling.saveAndEnable', {
+                  defaultMessage: 'Save and enable',
+                })}
+          </EuiButton>
+        </EuiFlexItem>
+      </EuiFlexGroup>
     </>
   );
 }
