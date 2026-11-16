@@ -7,17 +7,25 @@
 
 import { EuiCallOut, EuiSkeletonText, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import React from 'react';
+import type { TailSamplingResponse } from '@kbn/apm-api-shared';
+import React, { useEffect, useState } from 'react';
 import { FETCH_STATUS, useFetcher } from '../../../../hooks/use_fetcher';
 import { PoliciesTab } from './policies/policies_tab';
 
 export function TailSamplingSettings() {
+  const [latest, setLatest] = useState<TailSamplingResponse>();
   const { data, status } = useFetcher(
     (callApmApi) => callApmApi('GET /internal/tail_sampling'),
     [],
     // The settings are not time-based, so a time range refresh must not refetch them.
     { preservePreviousData: true, skipTimeRangeRefreshUpdate: true }
   );
+
+  useEffect(() => {
+    if (data) {
+      setLatest(data);
+    }
+  }, [data]);
 
   return (
     <>
@@ -49,30 +57,30 @@ export function TailSamplingSettings() {
             defaultMessage: 'The tail-based sampling settings could not be loaded',
           })}
         />
-      ) : !data ? (
+      ) : !latest ? (
         <EuiSkeletonText lines={6} />
       ) : (
         <>
-          {data.saved && (
+          {latest.saved && (
             <>
               <EuiText size="s" data-test-subj="apmTailSamplingSummary">
                 <p>
-                  {data.enabled
+                  {latest.enabled
                     ? i18n.translate('xpack.apm.tailSampling.summary.enabled', {
                         defaultMessage: 'Tail-based sampling is on with {count} saved policies.',
-                        values: { count: data.config.policies.length },
+                        values: { count: latest.config.policies.length },
                       })
                     : i18n.translate('xpack.apm.tailSampling.summary.disabled', {
                         defaultMessage:
                           'Tail-based sampling is off. {count} saved policies are kept.',
-                        values: { count: data.config.policies.length },
+                        values: { count: latest.config.policies.length },
                       })}
                 </p>
               </EuiText>
               <EuiSpacer size="m" />
             </>
           )}
-          <PoliciesTab initialPolicies={data.config.policies} />
+          <PoliciesTab saved={latest} onSaved={setLatest} />
         </>
       )}
     </>

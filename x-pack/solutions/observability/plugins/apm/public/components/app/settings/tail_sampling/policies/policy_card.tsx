@@ -8,6 +8,7 @@
 import {
   EuiBadge,
   EuiButtonIcon,
+  EuiCallOut,
   EuiCheckboxGroup,
   EuiCodeBlock,
   EuiComboBox,
@@ -35,8 +36,16 @@ interface StringAttributeBlock {
   enabled_regex_matching?: boolean;
 }
 
+interface CardDiagnostic {
+  message: string;
+  // The path inside the policy, joined for display.
+  path?: string;
+}
+
 interface Props {
   policy: TailSamplingPolicy;
+  diagnostics: CardDiagnostic[];
+  warnings: CardDiagnostic[];
   onChange: (policy: TailSamplingPolicy) => void;
   onRemove: () => void;
 }
@@ -245,7 +254,7 @@ function PolicyFields({
   }
 }
 
-export function PolicyCard({ policy, onChange, onRemove }: Props) {
+export function PolicyCard({ policy, diagnostics, warnings, onChange, onRemove }: Props) {
   const kind = getFormPolicyKind(policy);
   const isDrop = policy.type === 'drop';
   const removeLabel = i18n.translate('xpack.apm.tailSampling.form.remove', {
@@ -302,6 +311,31 @@ export function PolicyCard({ policy, onChange, onRemove }: Props) {
           {stringify(policy)}
         </EuiCodeBlock>
       )}
+
+      {diagnostics.map((diagnostic, index) => (
+        <React.Fragment key={`error-${index}`}>
+          <EuiSpacer size="m" />
+          <EuiCallOut
+            size="s"
+            iconType="error"
+            color="danger"
+            title={
+              diagnostic.path ? `${diagnostic.path}: ${diagnostic.message}` : diagnostic.message
+            }
+          />
+        </React.Fragment>
+      ))}
+      {warnings.map((warning, index) => (
+        <React.Fragment key={`warning-${index}`}>
+          <EuiSpacer size="m" />
+          <EuiCallOut
+            size="s"
+            iconType="warning"
+            color="warning"
+            title={warning.path ? `${warning.path}: ${warning.message}` : warning.message}
+          />
+        </React.Fragment>
+      ))}
     </EuiPanel>
   );
 }
