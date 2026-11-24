@@ -5,7 +5,14 @@
  * 2.0.
  */
 
-import { EuiCallOut, EuiSkeletonText, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
+import {
+  EuiCallOut,
+  EuiHealth,
+  EuiSkeletonText,
+  EuiSpacer,
+  EuiText,
+  EuiTitle,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { TailSamplingResponse } from '@kbn/apm-api-shared';
 import React, { useEffect, useState } from 'react';
@@ -63,20 +70,31 @@ export function TailSamplingSettings() {
         <>
           {latest.saved && (
             <>
-              <EuiText size="s" data-test-subj="apmTailSamplingSummary">
-                <p>
-                  {latest.enabled
-                    ? i18n.translate('xpack.apm.tailSampling.summary.enabled', {
-                        defaultMessage: 'Tail-based sampling is on with {count} saved policies.',
-                        values: { count: latest.config.policies.length },
-                      })
-                    : i18n.translate('xpack.apm.tailSampling.summary.disabled', {
-                        defaultMessage:
-                          'Tail-based sampling is off. {count} saved policies are kept.',
-                        values: { count: latest.config.policies.length },
-                      })}
-                </p>
-              </EuiText>
+              {latest.enabled ? (
+                <EuiHealth color="success" data-test-subj="apmTailSamplingSummary">
+                  {i18n.translate('xpack.apm.tailSampling.summary.enabled', {
+                    defaultMessage:
+                      'On: {count, plural, one {# saved policy is} other {# saved policies are}} applied.',
+                    values: { count: latest.config.policies.length },
+                  })}
+                </EuiHealth>
+              ) : (
+                <EuiCallOut
+                  size="s"
+                  color="warning"
+                  iconType="warning"
+                  data-test-subj="apmTailSamplingSummary"
+                  title={i18n.translate('xpack.apm.tailSampling.summary.disabled.title', {
+                    defaultMessage: 'Tail-based sampling is off',
+                  })}
+                >
+                  {i18n.translate('xpack.apm.tailSampling.summary.disabled.body', {
+                    defaultMessage:
+                      'All traces are kept. {count, plural, one {The saved policy is} other {The # saved policies are}} not applied. Enable sampling to turn it on again.',
+                    values: { count: latest.config.policies.length },
+                  })}
+                </EuiCallOut>
+              )}
               <EuiSpacer size="m" />
             </>
           )}

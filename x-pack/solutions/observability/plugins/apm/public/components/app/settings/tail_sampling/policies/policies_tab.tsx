@@ -52,6 +52,8 @@ export function PoliciesTab({ saved, onSaved }: Props) {
   }>();
   const [isValidating, setIsValidating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
+  const [isEnabling, setIsEnabling] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   const draftKey = JSON.stringify(policies);
@@ -129,6 +131,65 @@ export function PoliciesTab({ saved, onSaved }: Props) {
     }
   };
 
+  // The saved policies are kept, so sampling can be turned on again with a normal save.
+  const disable = async () => {
+    setIsDisabling(true);
+    try {
+      const { callApmApi } = getApmInternalServices();
+      const response = await callApmApi('POST /internal/tail_sampling/_disable', {
+        signal: null,
+      });
+      core.notifications.toasts.addSuccess(
+        i18n.translate('xpack.apm.tailSampling.disable.succeeded', {
+          defaultMessage: 'Tail-based sampling is off. The saved policies are kept.',
+        })
+      );
+      onSaved(response);
+    } catch (error) {
+      core.notifications.toasts.addError(error, {
+        title: i18n.translate('xpack.apm.tailSampling.disable.failed', {
+          defaultMessage: 'Tail-based sampling could not be turned off',
+        }),
+      });
+    } finally {
+      setIsDisabling(false);
+    }
+  };
+
+  // Prototype: turns sampling back on by saving the stored policies again, as they are. The
+  // PUT validates the body, so no Validate click is needed. It is disabled while the draft has
+  // unsaved edits, so it never enables something other than what the page shows.
+  const enable = async () => {
+    setIsEnabling(true);
+    try {
+      const { callApmApi } = getApmInternalServices();
+      const response = await callApmApi('PUT /internal/tail_sampling', {
+        signal: null,
+        params: {
+          body: {
+            processor: saved.processor,
+            config: saved.config,
+            version: saved.version,
+          },
+        },
+      });
+      core.notifications.toasts.addSuccess(
+        i18n.translate('xpack.apm.tailSampling.enable.succeeded', {
+          defaultMessage: 'Tail-based sampling is on.',
+        })
+      );
+      onSaved(response);
+    } catch (error) {
+      core.notifications.toasts.addError(error, {
+        title: i18n.translate('xpack.apm.tailSampling.enable.failed', {
+          defaultMessage: 'Tail-based sampling could not be turned on',
+        }),
+      });
+    } finally {
+      setIsEnabling(false);
+    }
+  };
+
   // Nothing saved and nothing added: the empty state already says what to do, so do not show
   // the empty-list error on top of it.
   const showEmptyState = policies.length === 0 && !saved.saved;
@@ -191,12 +252,27 @@ export function PoliciesTab({ saved, onSaved }: Props) {
       </EuiFlexGroup>
       <EuiSpacer size="m" />
 
-      {globalDiagnostics.map((diagnostic, index) => (
-        <React.Fragment key={`${diagnostic.code}-${index}`}>
-          <EuiCallOut size="s" iconType="error" color="danger" title={diagnostic.message} />
-          <EuiSpacer size="s" />
-        </React.Fragment>
-      ))}
+      {globalDiagnostics.map((diagnostic, index) => {
+        // Sampling is already off, so "disable it instead" does not apply. Ask for a policy.
+        const isEmptyListWhileOff = diagnostic.code === 'no_policies' && !saved.enabled;
+        return (
+          <React.Fragment key={`${diagnostic.code}-${index}`}>
+            {isEmptyListWhileOff ? (
+              <EuiCallOut
+                size="s"
+                color="primary"
+                data-test-subj="apmTailSamplingAddPolicyHint"
+                title={i18n.translate('xpack.apm.tailSampling.noPoliciesWhileOff', {
+                  defaultMessage: 'Add at least one policy to turn tail-based sampling on.',
+                })}
+              />
+            ) : (
+              <EuiCallOut size="s" iconType="error" color="danger" title={diagnostic.message} />
+            )}
+            <EuiSpacer size="s" />
+          </React.Fragment>
+        );
+      })}
       {globalWarnings.map((warning, index) => (
         <React.Fragment key={`${warning.code}-${index}`}>
           <EuiCallOut size="s" iconType="warning" color="warning" title={warning.message} />
@@ -255,6 +331,35 @@ export function PoliciesTab({ saved, onSaved }: Props) {
                 values: { hash: serverValidation.hash.slice(0, 8) },
               })}
             </EuiText>
+          </EuiFlexItem>
+        )}
+        {saved.enabled && (
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty
+              data-test-subj="apmTailSamplingDisable"
+              color="danger"
+              isLoading={isDisabling}
+              onClick={disable}
+            >
+              {i18n.translate('xpack.apm.tailSampling.disable', {
+                defaultMessage: 'Disable sampling',
+              })}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        )}
+        {saved.saved && !saved.enabled && (
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty
+              data-test-subj="apmTailSamplingEnable"
+              iconType="play"
+              isLoading={isEnabling}
+              isDisabled={hasChanges}
+              onClick={enable}
+            >
+              {i18n.translate('xpack.apm.tailSampling.enable', {
+                defaultMessage: 'Enable sampling',
+              })}
+            </EuiButtonEmpty>
           </EuiFlexItem>
         )}
         <EuiFlexItem grow={false}>
