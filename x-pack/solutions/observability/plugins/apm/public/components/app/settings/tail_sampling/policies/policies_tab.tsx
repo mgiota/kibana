@@ -108,7 +108,6 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           body: {
             processor: TAIL_SAMPLING_PROCESSOR,
             config: { policies },
-            validatedHash: serverValidation.hash,
             version: saved.version,
           },
         },

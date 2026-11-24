@@ -16,7 +16,10 @@ import { useDefaultEnvironment } from '../../../hooks/use_default_environment';
 import type { ApmRouter } from '../apm_route_config';
 import { ApmMainTemplate } from './apm_main_template';
 import { useApmFeatureFlag } from '../../../hooks/use_apm_feature_flag';
-import { ApmFeatureFlagName } from '../../../../common/apm_feature_flags';
+import {
+  APM_MANAGED_TAIL_SAMPLING_ENABLED_FEATURE_FLAG_KEY,
+  ApmFeatureFlagName,
+} from '../../../../common/apm_feature_flags';
 
 type Tab = AppHeaderTab & {
   key:
@@ -47,8 +50,9 @@ export function SettingsTemplate({ children, selectedTab }: Props) {
   );
   const migrationToFleetAvailable = useApmFeatureFlag(ApmFeatureFlagName.MigrationToFleetAvailable);
   const indicesAvailable = useApmFeatureFlag(ApmFeatureFlagName.ConfigurableIndicesAvailable);
-  const managedTailSamplingAvailable = useApmFeatureFlag(
-    ApmFeatureFlagName.ManagedTailSamplingAvailable
+  const managedTailSamplingEnabled = core.featureFlags.useBooleanValue(
+    APM_MANAGED_TAIL_SAMPLING_ENABLED_FEATURE_FLAG_KEY,
+    false
   );
 
   const tabs = getTabs({
@@ -59,7 +63,7 @@ export function SettingsTemplate({ children, selectedTab }: Props) {
     agentConfigurationAvailable,
     migrationToFleetAvailable,
     indicesAvailable,
-    managedTailSamplingAvailable,
+    managedTailSamplingEnabled,
   });
 
   return (
@@ -84,7 +88,7 @@ function getTabs({
   agentConfigurationAvailable,
   migrationToFleetAvailable,
   indicesAvailable,
-  managedTailSamplingAvailable,
+  managedTailSamplingEnabled,
 }: {
   core: CoreStart;
   selectedTab: Tab['key'];
@@ -93,7 +97,7 @@ function getTabs({
   agentConfigurationAvailable: boolean;
   migrationToFleetAvailable: boolean;
   indicesAvailable: boolean;
-  managedTailSamplingAvailable: boolean;
+  managedTailSamplingEnabled: boolean;
 }): AppHeaderTab[] {
   const canReadMlJobs = !!core.application.capabilities.ml?.canGetJobs;
 
@@ -171,7 +175,7 @@ function getTabs({
         defaultMessage: 'Tail-based sampling',
       }),
       href: router.link('/settings/tail-based-sampling'),
-      hidden: !managedTailSamplingAvailable,
+      hidden: !managedTailSamplingEnabled,
       'data-test-subj': 'apmSettingsTab_tail-based-sampling',
     },
     ...(indicesAvailable
