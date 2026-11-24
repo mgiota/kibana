@@ -42,7 +42,7 @@ function getResources(
 ): APMRouteHandlerResources {
   const { flag = true, body } = overrides;
   return {
-    featureFlags: { managedTailSamplingAvailable: flag },
+    context: { core: Promise.resolve({ featureFlags: { getBooleanValue: () => flag } }) },
     logger: loggingSystemMock.createLogger(),
     params: { body },
     request: {},

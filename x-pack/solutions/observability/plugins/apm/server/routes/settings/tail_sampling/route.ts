@@ -11,7 +11,7 @@ import {
   type TailSamplingResponse,
   type ValidateTailSamplingResponse,
 } from '@kbn/apm-api-shared';
-import type { ApmFeatureFlags } from '../../../../common/apm_feature_flags';
+import { APM_MANAGED_TAIL_SAMPLING_ENABLED_FEATURE_FLAG_KEY } from '../../../../common/apm_feature_flags';
 import { createApmServerRoute } from '../../apm_routes/create_apm_server_route';
 import type { APMRouteHandlerResources } from '../../apm_routes/register_apm_server_routes';
 import { getTailSamplingControlApi } from './control_api';
@@ -21,8 +21,11 @@ import {
   type StoredTailSampling,
 } from './tail_sampling_store';
 
-function throwNotFoundIfUnavailable(featureFlags: ApmFeatureFlags): void {
-  if (!featureFlags.managedTailSamplingAvailable) {
+async function throwNotFoundIfUnavailable({
+  context,
+}: Pick<APMRouteHandlerResources, 'context'>): Promise<void> {
+  const { featureFlags } = await context.core;
+  if (!featureFlags.getBooleanValue(APM_MANAGED_TAIL_SAMPLING_ENABLED_FEATURE_FLAG_KEY, false)) {
     throw Boom.notFound();
   }
 }
@@ -61,7 +64,7 @@ const getTailSamplingRoute = createApmServerRoute({
   endpoint: routeDefinitions.tailSampling.get.endpoint,
   security: { authz: { requiredPrivileges: ['apm'] } },
   handler: async (resources): Promise<TailSamplingResponse> => {
-    throwNotFoundIfUnavailable(resources.featureFlags);
+    await throwNotFoundIfUnavailable(resources);
     return toResponse(await getTailSamplingStore().get());
   },
 });
@@ -71,7 +74,7 @@ const validateTailSamplingRoute = createApmServerRoute({
   params: routeDefinitions.tailSampling.validate.params,
   security: { authz: { requiredPrivileges: ['apm'] } },
   handler: async (resources): Promise<ValidateTailSamplingResponse> => {
-    throwNotFoundIfUnavailable(resources.featureFlags);
+    await throwNotFoundIfUnavailable(resources);
     const { config } = resources.params.body;
     const validation = await getTailSamplingControlApi(resources.logger).validate(config);
     return {
@@ -87,7 +90,7 @@ const saveTailSamplingRoute = createApmServerRoute({
   params: routeDefinitions.tailSampling.save.params,
   security: { authz: { requiredPrivileges: ['apm', 'apm_settings_write'] } },
   handler: async (resources): Promise<TailSamplingResponse> => {
-    throwNotFoundIfUnavailable(resources.featureFlags);
+    await throwNotFoundIfUnavailable(resources);
     const { processor, config, version } = resources.params.body;
     const controlApi = getTailSamplingControlApi(resources.logger);
 
@@ -130,7 +133,7 @@ const disableTailSamplingRoute = createApmServerRoute({
   endpoint: routeDefinitions.tailSampling.disable.endpoint,
   security: { authz: { requiredPrivileges: ['apm', 'apm_settings_write'] } },
   handler: async (resources): Promise<TailSamplingResponse> => {
-    throwNotFoundIfUnavailable(resources.featureFlags);
+    await throwNotFoundIfUnavailable(resources);
     const store = getTailSamplingStore();
     const stored = await store.get();
     if (!stored?.enabled) {
