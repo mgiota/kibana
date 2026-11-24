@@ -5,6 +5,9 @@
  * 2.0.
  */
 import type { TailSamplingConfig, TailSamplingProcessor } from '@kbn/apm-api-shared';
+import { TailSamplingVersionConflictError } from './tail_sampling_version_conflict_error';
+
+export { TailSamplingVersionConflictError };
 
 export interface StoredTailSampling {
   enabled: boolean;
@@ -21,12 +24,6 @@ export type TailSamplingToStore = Pick<
   StoredTailSampling,
   'enabled' | 'processor' | 'config' | 'configHash' | 'updatedBy'
 >;
-
-export class TailSamplingVersionConflictError extends Error {
-  constructor() {
-    super('The stored tail-sampling config has changed since it was read.');
-  }
-}
 
 export interface TailSamplingStore {
   get(): Promise<StoredTailSampling | undefined>;

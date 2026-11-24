@@ -12,7 +12,6 @@ import {
   type ValidateTailSamplingResponse,
 } from '@kbn/apm-api-shared';
 import type { ApmFeatureFlags } from '../../../../common/apm_feature_flags';
-import { getTailSamplingPolicyWarnings } from '../../../../common/tail_sampling';
 import { createApmServerRoute } from '../../apm_routes/create_apm_server_route';
 import type { APMRouteHandlerResources } from '../../apm_routes/register_apm_server_routes';
 import { getTailSamplingControlApi } from './control_api';
@@ -50,7 +49,10 @@ function toResponse(stored: StoredTailSampling | undefined): TailSamplingRespons
   };
 }
 
-async function getCurrentUsername({ core, request }: APMRouteHandlerResources) {
+async function getCurrentUsername({
+  core,
+  request,
+}: APMRouteHandlerResources): Promise<string | undefined> {
   const coreStart = await core.start();
   return coreStart.security.authc.getCurrentUser(request)?.username;
 }
@@ -74,8 +76,8 @@ const validateTailSamplingRoute = createApmServerRoute({
     const validation = await getTailSamplingControlApi(resources.logger).validate(config);
     return {
       ...validation,
-      // Warnings assume a structurally valid config.
-      warnings: validation.valid ? getTailSamplingPolicyWarnings(config.policies) : [],
+      // The warning rules arrive in a separate change.
+      warnings: [],
     };
   },
 });
@@ -86,13 +88,10 @@ const saveTailSamplingRoute = createApmServerRoute({
   security: { authz: { requiredPrivileges: ['apm', 'apm_settings_write'] } },
   handler: async (resources): Promise<TailSamplingResponse> => {
     throwNotFoundIfUnavailable(resources.featureFlags);
-    const { processor, config, validatedHash, version } = resources.params.body;
+    const { processor, config, version } = resources.params.body;
     const controlApi = getTailSamplingControlApi(resources.logger);
 
     const validation = await controlApi.validate(config);
-    if (validation.hash !== validatedHash) {
-      throw Boom.conflict('The config changed after it was validated. Validate it again.');
-    }
     if (!validation.valid) {
       throw Boom.badRequest('The config did not pass validation.');
     }

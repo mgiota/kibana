@@ -139,22 +139,6 @@ describe('tail sampling routes', () => {
       expect(result.warnings).toEqual([]);
     });
 
-    it('returns warnings for a valid config', async () => {
-      const result = await route.handler(
-        getValidateResources({
-          body: body({
-            policies: [
-              { name: 'limit', type: 'rate_limiting', rate_limiting: { spans_per_second: 100 } },
-            ],
-          }),
-        })
-      );
-      expect(result.valid).toBe(true);
-      expect(result.warnings).toEqual([
-        expect.objectContaining({ code: 'rate_limit_per_replica' }),
-      ]);
-    });
-
     it('writes nothing', async () => {
       await route.handler(getValidateResources({ body: body({ policies }) }));
       expect(await store.get()).toBeUndefined();
@@ -171,7 +155,6 @@ describe('tail sampling routes', () => {
     const saveBody = (extra: Record<string, unknown> = {}) => ({
       processor: 'tail_sampling',
       config: { policies },
-      validatedHash: validHash,
       ...extra,
     });
     const getControlApi = () => getTailSamplingControlApi(loggingSystemMock.createLogger());
@@ -201,28 +184,17 @@ describe('tail sampling routes', () => {
       expect(apply).toHaveBeenCalledWith({ policies }, validHash);
     });
 
-    it('returns 409 and writes nothing when the validated hash is stale', async () => {
-      const apply = jest.spyOn(getControlApi(), 'apply');
-      await expect(
-        route.handler(getSaveResources({ body: saveBody({ validatedHash: 'stale' }) }))
-      ).rejects.toMatchObject({ output: { statusCode: 409 } });
-      expect(await store.get()).toBeUndefined();
-      expect(apply).not.toHaveBeenCalled();
-    });
-
     it('returns 400 and writes nothing when the config is invalid', async () => {
-      const invalid = [{ name: 'bad', type: 'nope' }];
+      const apply = jest.spyOn(getControlApi(), 'apply');
       await expect(
         route.handler(
           getSaveResources({
-            body: saveBody({
-              config: { policies: invalid },
-              validatedHash: getPoliciesHash(invalid),
-            }),
+            body: saveBody({ config: { policies: [{ name: 'bad', type: 'nope' }] } }),
           })
         )
       ).rejects.toMatchObject({ output: { statusCode: 400 } });
       expect(await store.get()).toBeUndefined();
+      expect(apply).not.toHaveBeenCalled();
     });
 
     it('saves when the version matches', async () => {
