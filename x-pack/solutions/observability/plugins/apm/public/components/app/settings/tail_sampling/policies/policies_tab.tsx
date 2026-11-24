@@ -60,11 +60,10 @@ export function PoliciesTab({ saved, onSaved }: Props) {
   const diagnostics = serverValidation?.diagnostics ?? localDiagnostics;
   const warnings = serverValidation?.warnings ?? [];
   // Saved policies are stored normalized, so compare normalized forms.
-  const isUnchanged =
-    saved.saved &&
-    saved.enabled &&
-    JSON.stringify(normalizeTailSamplingConfig(policies)) ===
-      JSON.stringify(normalizeTailSamplingConfig(savedPolicies));
+  const hasChanges =
+    JSON.stringify(normalizeTailSamplingConfig(policies)) !==
+    JSON.stringify(normalizeTailSamplingConfig(savedPolicies));
+  const isUnchanged = saved.saved && saved.enabled && !hasChanges;
   const canSave = !!serverValidation?.valid && !isUnchanged;
 
   const policyNames = policies.map(({ name }) => String(name ?? ''));
@@ -130,7 +129,12 @@ export function PoliciesTab({ saved, onSaved }: Props) {
     }
   };
 
-  const globalDiagnostics = diagnostics.filter(({ policyIndex }) => policyIndex === undefined);
+  // Nothing saved and nothing added: the empty state already says what to do, so do not show
+  // the empty-list error on top of it.
+  const showEmptyState = policies.length === 0 && !saved.saved;
+  const globalDiagnostics = showEmptyState
+    ? []
+    : diagnostics.filter(({ policyIndex }) => policyIndex === undefined);
   const globalWarnings = warnings.filter(({ policyIndex }) => policyIndex === undefined);
 
   return (
@@ -200,7 +204,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
         </React.Fragment>
       ))}
 
-      {policies.length === 0 && !saved.saved ? (
+      {showEmptyState ? (
         <EuiEmptyPrompt
           data-test-subj="apmTailSamplingEmpty"
           iconType="flask"
@@ -256,6 +260,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
         <EuiFlexItem grow={false}>
           <EuiButtonEmpty
             data-test-subj="apmTailSamplingRevert"
+            isDisabled={!hasChanges}
             onClick={() => {
               updatePolicies(savedPolicies);
               setValidation(undefined);
