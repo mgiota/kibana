@@ -5,14 +5,7 @@
  * 2.0.
  */
 
-import {
-  EuiCallOut,
-  EuiHealth,
-  EuiSkeletonText,
-  EuiSpacer,
-  EuiText,
-  EuiTitle,
-} from '@elastic/eui';
+import { EuiCallOut, EuiHealth, EuiSkeletonText, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { TailSamplingResponse } from '@kbn/apm-api-shared';
 import React, { useEffect, useState } from 'react';
@@ -80,6 +73,7 @@ export function TailSamplingSettings() {
                 </EuiHealth>
               ) : (
                 <EuiCallOut
+                  announceOnMount
                   size="s"
                   color="warning"
                   iconType="warning"

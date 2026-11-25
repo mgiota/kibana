@@ -259,6 +259,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           <React.Fragment key={`${diagnostic.code}-${index}`}>
             {isEmptyListWhileOff ? (
               <EuiCallOut
+                announceOnMount
                 size="s"
                 color="primary"
                 data-test-subj="apmTailSamplingAddPolicyHint"
@@ -267,7 +268,13 @@ export function PoliciesTab({ saved, onSaved }: Props) {
                 })}
               />
             ) : (
-              <EuiCallOut size="s" iconType="error" color="danger" title={diagnostic.message} />
+              <EuiCallOut
+                announceOnMount
+                size="s"
+                iconType="error"
+                color="danger"
+                title={diagnostic.message}
+              />
             )}
             <EuiSpacer size="s" />
           </React.Fragment>
