@@ -5,7 +5,16 @@
  * 2.0.
  */
 
-import { EuiCallOut, EuiHealth, EuiSkeletonText, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
+import {
+  EuiAccordion,
+  EuiCallOut,
+  EuiHealth,
+  EuiSkeletonText,
+  EuiSpacer,
+  EuiText,
+  EuiTitle,
+  useGeneratedHtmlId,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { TailSamplingResponse } from '@kbn/apm-api-shared';
 import React, { useEffect, useState } from 'react';
@@ -27,6 +36,8 @@ export function TailSamplingSettings() {
     }
   }, [data]);
 
+  const scopeAccordionId = useGeneratedHtmlId({ prefix: 'apmTailSamplingScope' });
+
   return (
     <>
       <EuiTitle size="s">
@@ -41,7 +52,7 @@ export function TailSamplingSettings() {
         <p>
           {i18n.translate('xpack.apm.tailSampling.intro', {
             defaultMessage:
-              'Decide which traces to keep after each trace completes. Applies to traces sent to the managed OTLP endpoint and from Elastic APM agents. Traces collected through Streams sources are not sampled. Service metrics are computed from all traces before sampling.',
+              'Keep the traces that matter and drop the rest. Each trace is judged once it is complete, so you can decide by its errors, duration or attributes.',
           })}
         </p>
       </EuiText>
@@ -61,13 +72,23 @@ export function TailSamplingSettings() {
         <EuiSkeletonText lines={6} />
       ) : (
         <>
+          {!latest.saved && (
+            <>
+              <EuiHealth color="subdued" data-test-subj="apmTailSamplingSummary">
+                {i18n.translate('xpack.apm.tailSampling.summary.notSetUp', {
+                  defaultMessage: 'Off. All traces are kept.',
+                })}
+              </EuiHealth>
+              <EuiSpacer size="m" />
+            </>
+          )}
           {latest.saved && (
             <>
               {latest.enabled ? (
                 <EuiHealth color="success" data-test-subj="apmTailSamplingSummary">
                   {i18n.translate('xpack.apm.tailSampling.summary.enabled', {
                     defaultMessage:
-                      'On: {count, plural, one {# saved policy is} other {# saved policies are}} applied.',
+                      'On. {count, plural, one {# policy decides} other {# policies decide}} which traces are kept.',
                     values: { count: latest.config.policies.length },
                   })}
                 </EuiHealth>
@@ -92,6 +113,37 @@ export function TailSamplingSettings() {
               <EuiSpacer size="m" />
             </>
           )}
+          <EuiAccordion
+            id={scopeAccordionId}
+            data-test-subj="apmTailSamplingScope"
+            buttonContent={i18n.translate('xpack.apm.tailSampling.scope.title', {
+              defaultMessage: 'What is sampled',
+            })}
+            paddingSize="s"
+          >
+            <EuiText size="s" color="subdued">
+              <ul>
+                <li>
+                  {i18n.translate('xpack.apm.tailSampling.scope.applies', {
+                    defaultMessage:
+                      'Traces sent to the managed OTLP endpoint and from Elastic APM agents are sampled.',
+                  })}
+                </li>
+                <li>
+                  {i18n.translate('xpack.apm.tailSampling.scope.streams', {
+                    defaultMessage: 'Traces collected through Streams sources are not sampled.',
+                  })}
+                </li>
+                <li>
+                  {i18n.translate('xpack.apm.tailSampling.scope.metrics', {
+                    defaultMessage:
+                      'Service metrics are computed from all traces, before sampling.',
+                  })}
+                </li>
+              </ul>
+            </EuiText>
+          </EuiAccordion>
+          <EuiSpacer size="l" />
           <PoliciesTab saved={latest} onSaved={setLatest} />
         </>
       )}

@@ -170,7 +170,7 @@ export function PolicyList({ policies, diagnostics, warnings, onEdit, onRemove }
         return (
           <React.Fragment key={action}>
             <EuiText size="xs" data-test-subj={`apmTailSamplingPolicyGroup_${action}`}>
-              <h3>{title}</h3>
+              <h4>{title}</h4>
               <p>{description}</p>
             </EuiText>
             <EuiSpacer size="s" />
@@ -193,6 +193,34 @@ export function PolicyList({ policies, diagnostics, warnings, onEdit, onRemove }
           </React.Fragment>
         );
       })}
+      {/* Not a policy: shows what happens to a trace that matches none of them. */}
+      <EuiPanel color="subdued" paddingSize="s" data-test-subj="apmTailSamplingOtherTraces">
+        <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <EuiBadge color="hollow">
+              {i18n.translate('xpack.apm.tailSampling.list.otherTraces.action', {
+                defaultMessage: 'Not kept',
+              })}
+            </EuiBadge>
+          </EuiFlexItem>
+          <EuiFlexItem grow={2}>
+            <EuiText size="s">
+              <strong>
+                {i18n.translate('xpack.apm.tailSampling.list.otherTraces.name', {
+                  defaultMessage: 'All other traces',
+                })}
+              </strong>
+            </EuiText>
+          </EuiFlexItem>
+          <EuiFlexItem grow={3}>
+            <EuiText size="s" color="subdued">
+              {i18n.translate('xpack.apm.tailSampling.list.otherTraces.description', {
+                defaultMessage: 'Traces that match no policy',
+              })}
+            </EuiText>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPanel>
     </>
   );
 }
