@@ -32,6 +32,7 @@ import { useApmPluginContext } from '../../../../../context/apm_plugin/use_apm_p
 import { getApmInternalServices } from '../../../../../plugin';
 import { PolicyFlyout } from './policy_flyout';
 import { PolicyList } from './policy_list';
+import { PolicyTour, TOUR_ANCHOR_POLICIES } from './policy_tour';
 import { StarterSetBoxes } from './starter_set_boxes';
 import { DEFAULT_STARTER_SET, findStarterSet, getStarterSetPolicies } from './starter_sets';
 
@@ -261,7 +262,12 @@ export function PoliciesTab({ saved, onSaved }: Props) {
         </>
       )}
 
-      <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+      <EuiFlexGroup
+        justifyContent="spaceBetween"
+        alignItems="center"
+        responsive={false}
+        data-test-subj={TOUR_ANCHOR_POLICIES}
+      >
         <EuiFlexItem grow={false}>
           <EuiTitle size="xs">
             <h3>
@@ -417,6 +423,9 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>
+
+      {/* Only on a first setup, while the starter sets are on the page. */}
+      <PolicyTour isActive={!saved.saved} />
     </>
   );
 }
