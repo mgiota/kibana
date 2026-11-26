@@ -6,48 +6,25 @@
  */
 
 import {
-  EuiBadge,
-  EuiButtonIcon,
-  EuiCallOut,
   EuiCheckboxGroup,
-  EuiCodeBlock,
   EuiComboBox,
   EuiFieldNumber,
   EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
   EuiFormRow,
-  EuiPanel,
-  EuiSpacer,
   EuiSwitch,
-  EuiText,
-  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { TailSamplingPolicy } from '@kbn/apm-api-shared';
 import React from 'react';
-import { stringify } from 'yaml';
 import { statusCodeValues } from '../../../../../../common/tail_sampling/policy_schema';
-import { formPolicyLabels, getFormPolicyKind } from './form_policy';
+import type { PolicyFieldErrors } from './form_policy';
 
 interface StringAttributeBlock {
   key: string;
   values: string[];
   enabled_regex_matching?: boolean;
-}
-
-interface CardDiagnostic {
-  message: string;
-  // The path inside the policy, joined for display.
-  path?: string;
-}
-
-interface Props {
-  policy: TailSamplingPolicy;
-  diagnostics: CardDiagnostic[];
-  warnings: CardDiagnostic[];
-  onChange: (policy: TailSamplingPolicy) => void;
-  onRemove: () => void;
 }
 
 // The default max width of EuiFormRow, so fields side by side match the policy name field.
@@ -59,9 +36,11 @@ function toNumber(value: string): number | undefined {
 
 function StringAttributeFields({
   block,
+  errors,
   onChange,
 }: {
   block: StringAttributeBlock;
+  errors: PolicyFieldErrors;
   onChange: (block: StringAttributeBlock) => void;
 }) {
   return (
@@ -71,9 +50,12 @@ function StringAttributeFields({
           label={i18n.translate('xpack.apm.tailSampling.form.attributeKey', {
             defaultMessage: 'Attribute',
           })}
+          isInvalid={errors.key !== undefined}
+          error={errors.key}
         >
           <EuiFieldText
             data-test-subj="apmTailSamplingAttributeKey"
+            isInvalid={errors.key !== undefined}
             placeholder="customer.tier"
             value={block.key ?? ''}
             onChange={(event) => onChange({ ...block, key: event.target.value })}
@@ -85,9 +67,12 @@ function StringAttributeFields({
           label={i18n.translate('xpack.apm.tailSampling.form.attributeValues', {
             defaultMessage: 'Values',
           })}
+          isInvalid={errors.values !== undefined}
+          error={errors.values}
         >
           <EuiComboBox
             data-test-subj="apmTailSamplingAttributeValues"
+            isInvalid={errors.values !== undefined}
             noSuggestions
             selectedOptions={(block.values ?? []).map((value) => ({ label: value }))}
             onCreateOption={(value) =>
@@ -119,11 +104,14 @@ function StringAttributeFields({
   );
 }
 
-function PolicyFields({
+export function PolicyFields({
   policy,
+  errors,
   onChange,
 }: {
   policy: TailSamplingPolicy;
+  // Field errors to show. Empty while the user has not tried to submit.
+  errors: PolicyFieldErrors;
   onChange: (policy: TailSamplingPolicy) => void;
 }) {
   switch (policy.type) {
@@ -134,6 +122,8 @@ function PolicyFields({
           label={i18n.translate('xpack.apm.tailSampling.form.statusCodes', {
             defaultMessage: 'Keep traces with a span in status',
           })}
+          isInvalid={errors.status_codes !== undefined}
+          error={errors.status_codes}
         >
           <EuiCheckboxGroup
             options={statusCodeValues.map((code) => ({ id: code, label: code }))}
@@ -164,9 +154,12 @@ function PolicyFields({
               label={i18n.translate('xpack.apm.tailSampling.form.thresholdMs', {
                 defaultMessage: 'Trace duration at least',
               })}
+              isInvalid={errors.threshold_ms !== undefined}
+              error={errors.threshold_ms}
             >
               <EuiFieldNumber
                 data-test-subj="apmTailSamplingLatencyThreshold"
+                isInvalid={errors.threshold_ms !== undefined}
                 min={0}
                 append="ms"
                 value={block.threshold_ms ?? ''}
@@ -184,9 +177,12 @@ function PolicyFields({
               label={i18n.translate('xpack.apm.tailSampling.form.upperThresholdMs', {
                 defaultMessage: 'and at most (optional)',
               })}
+              isInvalid={errors.upper_threshold_ms !== undefined}
+              error={errors.upper_threshold_ms}
             >
               <EuiFieldNumber
                 data-test-subj="apmTailSamplingLatencyUpperThreshold"
+                isInvalid={errors.upper_threshold_ms !== undefined}
                 min={0}
                 append="ms"
                 value={block.upper_threshold_ms ?? ''}
@@ -209,9 +205,12 @@ function PolicyFields({
           label={i18n.translate('xpack.apm.tailSampling.form.percentage', {
             defaultMessage: 'Share of traces to keep',
           })}
+          isInvalid={errors.sampling_percentage !== undefined}
+          error={errors.sampling_percentage}
         >
           <EuiFieldNumber
             data-test-subj="apmTailSamplingPercentage"
+            isInvalid={errors.sampling_percentage !== undefined}
             min={0}
             max={100}
             step="any"
@@ -231,6 +230,7 @@ function PolicyFields({
       return (
         <StringAttributeFields
           block={policy.string_attribute as StringAttributeBlock}
+          errors={errors}
           onChange={(block) => onChange({ ...policy, string_attribute: block })}
         />
       );
@@ -240,6 +240,7 @@ function PolicyFields({
       return (
         <StringAttributeFields
           block={subPolicy.string_attribute as StringAttributeBlock}
+          errors={errors}
           onChange={(block) =>
             onChange({
               ...policy,
@@ -252,90 +253,4 @@ function PolicyFields({
     default:
       return null;
   }
-}
-
-export function PolicyCard({ policy, diagnostics, warnings, onChange, onRemove }: Props) {
-  const kind = getFormPolicyKind(policy);
-  const isDrop = policy.type === 'drop';
-  const removeLabel = i18n.translate('xpack.apm.tailSampling.form.remove', {
-    defaultMessage: 'Remove policy',
-  });
-
-  return (
-    <EuiPanel hasBorder paddingSize="m" data-test-subj="apmTailSamplingPolicyCard">
-      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-        <EuiFlexItem grow={false}>
-          <EuiBadge color={isDrop ? 'danger' : 'hollow'}>{String(policy.type)}</EuiBadge>
-        </EuiFlexItem>
-        <EuiFlexItem>
-          <EuiText size="s">
-            <strong>{kind ? formPolicyLabels[kind] : String(policy.name ?? '')}</strong>
-          </EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiToolTip content={removeLabel} disableScreenReaderOutput>
-            <EuiButtonIcon
-              data-test-subj="apmTailSamplingRemovePolicy"
-              iconType="trash"
-              color="danger"
-              aria-label={removeLabel}
-              onClick={onRemove}
-            />
-          </EuiToolTip>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-      <EuiSpacer size="m" />
-
-      {kind ? (
-        <EuiFlexGroup direction="column" gutterSize="m">
-          <EuiFlexItem>
-            <EuiFormRow
-              label={i18n.translate('xpack.apm.tailSampling.form.name', {
-                defaultMessage: 'Policy name',
-              })}
-            >
-              <EuiFieldText
-                data-test-subj="apmTailSamplingPolicyName"
-                value={String(policy.name ?? '')}
-                onChange={(event) => onChange({ ...policy, name: event.target.value })}
-              />
-            </EuiFormRow>
-          </EuiFlexItem>
-          <EuiFlexItem>
-            <PolicyFields policy={policy} onChange={onChange} />
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      ) : (
-        // The form can't edit this policy without losing settings. The YAML editor will.
-        <EuiCodeBlock language="yaml" fontSize="s" paddingSize="s" isCopyable>
-          {stringify(policy)}
-        </EuiCodeBlock>
-      )}
-
-      {diagnostics.map((diagnostic, index) => (
-        <React.Fragment key={`error-${index}`}>
-          <EuiSpacer size="m" />
-          <EuiCallOut
-            size="s"
-            iconType="error"
-            color="danger"
-            title={
-              diagnostic.path ? `${diagnostic.path}: ${diagnostic.message}` : diagnostic.message
-            }
-          />
-        </React.Fragment>
-      ))}
-      {warnings.map((warning, index) => (
-        <React.Fragment key={`warning-${index}`}>
-          <EuiSpacer size="m" />
-          <EuiCallOut
-            size="s"
-            iconType="warning"
-            color="warning"
-            title={warning.path ? `${warning.path}: ${warning.message}` : warning.message}
-          />
-        </React.Fragment>
-      ))}
-    </EuiPanel>
-  );
 }

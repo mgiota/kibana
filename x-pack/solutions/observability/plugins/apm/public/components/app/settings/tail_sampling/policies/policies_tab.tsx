@@ -9,12 +9,9 @@ import {
   EuiButton,
   EuiButtonEmpty,
   EuiCallOut,
-  EuiContextMenuItem,
-  EuiContextMenuPanel,
   EuiEmptyPrompt,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiPopover,
   EuiSpacer,
   EuiText,
 } from '@elastic/eui';
@@ -32,15 +29,13 @@ import {
 } from '../../../../../../common/tail_sampling';
 import { useApmPluginContext } from '../../../../../context/apm_plugin/use_apm_plugin_context';
 import { getApmInternalServices } from '../../../../../plugin';
-import { createFormPolicy, formPolicyKinds, formPolicyLabels } from './form_policy';
-import { PolicyCard } from './policy_card';
+import { PolicyFlyout } from './policy_flyout';
+import { PolicyList } from './policy_list';
 
 interface Props {
   saved: TailSamplingResponse;
   onSaved: (response: TailSamplingResponse) => void;
 }
-
-const formatPath = (path?: Array<string | number>) => (path?.length ? path.join('.') : undefined);
 
 export function PoliciesTab({ saved, onSaved }: Props) {
   const { core } = useApmPluginContext();
@@ -54,7 +49,8 @@ export function PoliciesTab({ saved, onSaved }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
   const [isEnabling, setIsEnabling] = useState(false);
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  // The flyout is open when set. Without an index it adds a policy.
+  const [flyout, setFlyout] = useState<{ index?: number }>();
 
   const draftKey = JSON.stringify(policies);
   const localDiagnostics = useMemo(() => validateTailSamplingPolicies(policies), [policies]);
@@ -212,42 +208,16 @@ export function PoliciesTab({ saved, onSaved }: Props) {
 
       <EuiFlexGroup justifyContent="flexEnd">
         <EuiFlexItem grow={false}>
-          <EuiPopover
-            aria-label={i18n.translate('xpack.apm.tailSampling.addPolicy.menu', {
-              defaultMessage: 'Policy types',
-            })}
-            isOpen={isAddMenuOpen}
-            closePopover={() => setIsAddMenuOpen(false)}
-            panelPaddingSize="none"
-            anchorPosition="downRight"
-            button={
-              <EuiButton
-                data-test-subj="apmTailSamplingAddPolicy"
-                iconType="plusCircle"
-                size="s"
-                onClick={() => setIsAddMenuOpen((open) => !open)}
-              >
-                {i18n.translate('xpack.apm.tailSampling.addPolicy', {
-                  defaultMessage: 'Add policy',
-                })}
-              </EuiButton>
-            }
+          <EuiButton
+            data-test-subj="apmTailSamplingAddPolicy"
+            iconType="plusCircle"
+            size="s"
+            onClick={() => setFlyout({})}
           >
-            <EuiContextMenuPanel
-              items={formPolicyKinds.map((kind) => (
-                <EuiContextMenuItem
-                  key={kind}
-                  data-test-subj={`apmTailSamplingAddPolicy_${kind}`}
-                  onClick={() => {
-                    setIsAddMenuOpen(false);
-                    updatePolicies([...policies, createFormPolicy(kind, policyNames)]);
-                  }}
-                >
-                  {formPolicyLabels[kind]}
-                </EuiContextMenuItem>
-              ))}
-            />
-          </EuiPopover>
+            {i18n.translate('xpack.apm.tailSampling.addPolicy', {
+              defaultMessage: 'Add policy',
+            })}
+          </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="m" />
@@ -307,25 +277,29 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           }
         />
       ) : (
-        <EuiFlexGroup direction="column" gutterSize="s">
-          {policies.map((policy, index) => (
-            <EuiFlexItem key={index}>
-              <PolicyCard
-                policy={policy}
-                diagnostics={diagnostics
-                  .filter(({ policyIndex }) => policyIndex === index)
-                  .map(({ message, path }) => ({ message, path: formatPath(path) }))}
-                warnings={warnings
-                  .filter(({ policyIndex }) => policyIndex === index)
-                  .map(({ message, path }) => ({ message, path: formatPath(path) }))}
-                onChange={(next) =>
-                  updatePolicies(policies.map((current, i) => (i === index ? next : current)))
-                }
-                onRemove={() => updatePolicies(policies.filter((_, i) => i !== index))}
-              />
-            </EuiFlexItem>
-          ))}
-        </EuiFlexGroup>
+        <PolicyList
+          policies={policies}
+          diagnostics={diagnostics}
+          warnings={warnings}
+          onEdit={(index) => setFlyout({ index })}
+          onRemove={(index) => updatePolicies(policies.filter((_, i) => i !== index))}
+        />
+      )}
+
+      {flyout && (
+        <PolicyFlyout
+          policy={flyout.index === undefined ? undefined : policies[flyout.index]}
+          existingNames={policyNames.filter((_, i) => i !== flyout.index)}
+          onClose={() => setFlyout(undefined)}
+          onSubmit={(next) => {
+            updatePolicies(
+              flyout.index === undefined
+                ? [...policies, next]
+                : policies.map((current, i) => (i === flyout.index ? next : current))
+            );
+            setFlyout(undefined);
+          }}
+        />
       )}
 
       <EuiSpacer size="l" />
