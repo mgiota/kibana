@@ -18,6 +18,7 @@ import { i18n } from '@kbn/i18n';
 import type { TailSamplingPolicy } from '@kbn/apm-api-shared';
 import React from 'react';
 import { isPending } from '../../../../../hooks/use_fetcher';
+import { PolicyPreviewChart } from './policy_preview_chart';
 import { getKeptPercentage, getTopKeepingPolicy, usePolicyPreview } from './use_policy_preview';
 
 // From this share on, sampling saves little, and the page says so.
@@ -104,6 +105,12 @@ export function PolicyPreviewSummary({ policies, isEnabled }: Props) {
                     'This keeps almost all your traces, so sampling would save little.',
                 })}
           </EuiText>
+        </>
+      )}
+      {percentage !== undefined && (
+        <>
+          <EuiSpacer size="m" />
+          <PolicyPreviewChart buckets={data.buckets} start={data.start} end={data.end} />
         </>
       )}
       {percentage !== undefined && data.basis === 'kept_traces' && (
