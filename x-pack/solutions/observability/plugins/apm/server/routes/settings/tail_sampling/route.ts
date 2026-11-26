@@ -8,13 +8,16 @@ import Boom from '@hapi/boom';
 import {
   routeDefinitions,
   TAIL_SAMPLING_PROCESSOR,
+  type TailSamplingPreviewResponse,
   type TailSamplingResponse,
   type ValidateTailSamplingResponse,
 } from '@kbn/apm-api-shared';
 import { APM_MANAGED_TAIL_SAMPLING_ENABLED_FEATURE_FLAG_KEY } from '../../../../common/apm_feature_flags';
 import { createApmServerRoute } from '../../apm_routes/create_apm_server_route';
 import type { APMRouteHandlerResources } from '../../apm_routes/register_apm_server_routes';
+import { getApmEventClient } from '../../../lib/helpers/get_apm_event_client';
 import { getTailSamplingControlApi } from './control_api';
+import { getTailSamplingPreview } from './get_preview';
 import {
   getTailSamplingStore,
   TailSamplingVersionConflictError,
@@ -81,6 +84,27 @@ const validateTailSamplingRoute = createApmServerRoute({
       ...validation,
       // The warning rules arrive in a separate change.
       warnings: [],
+    };
+  },
+});
+
+// Reads the stored traces only. It does not validate the config or call the control API.
+const previewTailSamplingRoute = createApmServerRoute({
+  endpoint: routeDefinitions.tailSampling.preview.endpoint,
+  params: routeDefinitions.tailSampling.preview.params,
+  security: { authz: { requiredPrivileges: ['apm'] } },
+  handler: async (resources): Promise<TailSamplingPreviewResponse> => {
+    await throwNotFoundIfUnavailable(resources);
+    const { policies } = resources.params.body.config;
+    const [apmEventClient, stored] = await Promise.all([
+      getApmEventClient(resources),
+      getTailSamplingStore().get(),
+    ]);
+    const preview = await getTailSamplingPreview({ apmEventClient, policies, end: Date.now() });
+    return {
+      ...preview,
+      // Once sampling is on, only the kept traces are stored.
+      basis: stored?.enabled ? 'kept_traces' : 'all_traces',
     };
   },
 });
@@ -161,6 +185,7 @@ const disableTailSamplingRoute = createApmServerRoute({
 export const tailSamplingRouteRepository = {
   ...getTailSamplingRoute,
   ...validateTailSamplingRoute,
+  ...previewTailSamplingRoute,
   ...saveTailSamplingRoute,
   ...disableTailSamplingRoute,
 };
