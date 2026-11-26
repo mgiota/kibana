@@ -50,7 +50,10 @@ export function PolicyPreviewSummary({ policies, isEnabled }: Props) {
   const percentage = getKeptPercentage(data);
   const topPolicy = getTopKeepingPolicy(data);
 
-  const keepsAlmostAll = percentage !== undefined && percentage >= KEEPS_ALMOST_ALL_PERCENTAGE;
+  // Sampling is on: the stored traces are already sampled, so this is a rough guide only.
+  const isBasedOnKeptTraces = data.basis === 'kept_traces';
+  const keepsAlmostAll =
+    !isBasedOnKeptTraces && percentage !== undefined && percentage >= KEEPS_ALMOST_ALL_PERCENTAGE;
 
   return (
     <EuiPanel
@@ -59,6 +62,17 @@ export function PolicyPreviewSummary({ policies, isEnabled }: Props) {
       paddingSize="m"
       data-test-subj="apmTailSamplingPreviewSummary"
     >
+      {percentage !== undefined && isBasedOnKeptTraces && (
+        <>
+          <EuiText size="s" color="subdued" data-test-subj="apmTailSamplingPreviewKeptBasis">
+            {i18n.translate('xpack.apm.tailSampling.preview.keptTracesBasis', {
+              defaultMessage:
+                'Sampling is on, so only kept traces are stored. This estimate is based on those and is likely too high.',
+            })}
+          </EuiText>
+          <EuiSpacer size="s" />
+        </>
+      )}
       {percentage === undefined ? (
         <EuiText size="s">
           {i18n.translate('xpack.apm.tailSampling.preview.noTraces', {
@@ -75,9 +89,13 @@ export function PolicyPreviewSummary({ policies, isEnabled }: Props) {
           <EuiFlexItem>
             <EuiText size="s">
               <strong>
-                {i18n.translate('xpack.apm.tailSampling.preview.title', {
-                  defaultMessage: 'Estimated share of traces kept',
-                })}
+                {isBasedOnKeptTraces
+                  ? i18n.translate('xpack.apm.tailSampling.preview.titleForChanges', {
+                      defaultMessage: 'Estimate for your changes',
+                    })
+                  : i18n.translate('xpack.apm.tailSampling.preview.title', {
+                      defaultMessage: 'Estimated share of traces kept',
+                    })}
               </strong>
             </EuiText>
             <EuiText size="s">
@@ -112,14 +130,6 @@ export function PolicyPreviewSummary({ policies, isEnabled }: Props) {
           <EuiSpacer size="m" />
           <PolicyPreviewChart buckets={data.buckets} start={data.start} end={data.end} />
         </>
-      )}
-      {percentage !== undefined && data.basis === 'kept_traces' && (
-        <EuiText size="xs" color="subdued">
-          {i18n.translate('xpack.apm.tailSampling.preview.keptTracesBasis', {
-            defaultMessage:
-              'Sampling is on, so only kept traces are stored. The estimate is based on those.',
-          })}
-        </EuiText>
       )}
       {data.unsupportedPolicies.length > 0 && (
         <EuiText size="xs" color="subdued">

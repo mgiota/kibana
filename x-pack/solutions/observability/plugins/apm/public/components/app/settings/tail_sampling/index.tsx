@@ -8,7 +8,8 @@
 import {
   EuiAccordion,
   EuiCallOut,
-  EuiHealth,
+  EuiFlexGroup,
+  EuiFlexItem,
   EuiSkeletonText,
   EuiSpacer,
   EuiText,
@@ -20,6 +21,7 @@ import type { TailSamplingResponse } from '@kbn/apm-api-shared';
 import React, { useEffect, useState } from 'react';
 import { FETCH_STATUS, useFetcher } from '../../../../hooks/use_fetcher';
 import { PoliciesTab } from './policies/policies_tab';
+import { SamplingSwitch } from './sampling_switch';
 
 export function TailSamplingSettings() {
   const [latest, setLatest] = useState<TailSamplingResponse>();
@@ -40,13 +42,22 @@ export function TailSamplingSettings() {
 
   return (
     <>
-      <EuiTitle size="s">
-        <h2>
-          {i18n.translate('xpack.apm.tailSampling.title', {
-            defaultMessage: 'Tail-based sampling',
-          })}
-        </h2>
-      </EuiTitle>
+      <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" gutterSize="m">
+        <EuiFlexItem grow={false}>
+          <EuiTitle size="s">
+            <h2>
+              {i18n.translate('xpack.apm.tailSampling.title', {
+                defaultMessage: 'Tail-based sampling',
+              })}
+            </h2>
+          </EuiTitle>
+        </EuiFlexItem>
+        {latest && status !== FETCH_STATUS.FAILURE && (
+          <EuiFlexItem grow={false}>
+            <SamplingSwitch saved={latest} onChange={setLatest} />
+          </EuiFlexItem>
+        )}
+      </EuiFlexGroup>
       <EuiSpacer size="s" />
       <EuiText size="s" color="subdued">
         <p>
@@ -72,47 +83,6 @@ export function TailSamplingSettings() {
         <EuiSkeletonText lines={6} />
       ) : (
         <>
-          {!latest.saved && (
-            <>
-              <EuiHealth color="subdued" data-test-subj="apmTailSamplingSummary">
-                {i18n.translate('xpack.apm.tailSampling.summary.notSetUp', {
-                  defaultMessage: 'Off. All traces are kept.',
-                })}
-              </EuiHealth>
-              <EuiSpacer size="m" />
-            </>
-          )}
-          {latest.saved && (
-            <>
-              {latest.enabled ? (
-                <EuiHealth color="success" data-test-subj="apmTailSamplingSummary">
-                  {i18n.translate('xpack.apm.tailSampling.summary.enabled', {
-                    defaultMessage:
-                      'On. {count, plural, one {# policy decides} other {# policies decide}} which traces are kept.',
-                    values: { count: latest.config.policies.length },
-                  })}
-                </EuiHealth>
-              ) : (
-                <EuiCallOut
-                  announceOnMount
-                  size="s"
-                  color="warning"
-                  iconType="warning"
-                  data-test-subj="apmTailSamplingSummary"
-                  title={i18n.translate('xpack.apm.tailSampling.summary.disabled.title', {
-                    defaultMessage: 'Tail-based sampling is off',
-                  })}
-                >
-                  {i18n.translate('xpack.apm.tailSampling.summary.disabled.body', {
-                    defaultMessage:
-                      'All traces are kept. {count, plural, one {The saved policy is} other {The # saved policies are}} not applied. Enable sampling to turn it on again.',
-                    values: { count: latest.config.policies.length },
-                  })}
-                </EuiCallOut>
-              )}
-              <EuiSpacer size="m" />
-            </>
-          )}
           <EuiAccordion
             id={scopeAccordionId}
             data-test-subj="apmTailSamplingScope"

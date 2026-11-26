@@ -54,8 +54,6 @@ export function PoliciesTab({ saved, onSaved }: Props) {
     response: ValidateTailSamplingResponse;
   }>();
   const [isSaving, setIsSaving] = useState(false);
-  const [isDisabling, setIsDisabling] = useState(false);
-  const [isEnabling, setIsEnabling] = useState(false);
   // The flyout is open when set. Without an index it adds a policy.
   const [flyout, setFlyout] = useState<{ index?: number }>();
 
@@ -127,65 +125,6 @@ export function PoliciesTab({ saved, onSaved }: Props) {
       });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // The saved policies are kept, so sampling can be turned on again with a normal save.
-  const disable = async () => {
-    setIsDisabling(true);
-    try {
-      const { callApmApi } = getApmInternalServices();
-      const response = await callApmApi('POST /internal/tail_sampling/_disable', {
-        signal: null,
-      });
-      core.notifications.toasts.addSuccess(
-        i18n.translate('xpack.apm.tailSampling.disable.succeeded', {
-          defaultMessage: 'Tail-based sampling is off. The saved policies are kept.',
-        })
-      );
-      onSaved(response);
-    } catch (error) {
-      core.notifications.toasts.addError(error, {
-        title: i18n.translate('xpack.apm.tailSampling.disable.failed', {
-          defaultMessage: 'Tail-based sampling could not be turned off',
-        }),
-      });
-    } finally {
-      setIsDisabling(false);
-    }
-  };
-
-  // Prototype: turns sampling back on by saving the stored policies again, as they are. The
-  // PUT validates the body. It is disabled while the draft has unsaved edits, so it never
-  // enables something other than what the page shows.
-  const enable = async () => {
-    setIsEnabling(true);
-    try {
-      const { callApmApi } = getApmInternalServices();
-      const response = await callApmApi('PUT /internal/tail_sampling', {
-        signal: null,
-        params: {
-          body: {
-            processor: saved.processor,
-            config: saved.config,
-            version: saved.version,
-          },
-        },
-      });
-      core.notifications.toasts.addSuccess(
-        i18n.translate('xpack.apm.tailSampling.enable.succeeded', {
-          defaultMessage: 'Tail-based sampling is on.',
-        })
-      );
-      onSaved(response);
-    } catch (error) {
-      core.notifications.toasts.addError(error, {
-        title: i18n.translate('xpack.apm.tailSampling.enable.failed', {
-          defaultMessage: 'Tail-based sampling could not be turned on',
-        }),
-      });
-    } finally {
-      setIsEnabling(false);
     }
   };
 
@@ -331,7 +270,13 @@ export function PoliciesTab({ saved, onSaved }: Props) {
 
       <PolicyPreviewSummary
         policies={policies}
-        isEnabled={policies.length > 0 && localDiagnostics.length === 0}
+        isEnabled={
+          policies.length > 0 &&
+          localDiagnostics.length === 0 &&
+          // With sampling on, only kept traces are stored, so the saved policies would always
+          // seem to keep everything. The estimate is only shown for unsaved changes then.
+          (!saved.enabled || hasChanges)
+        }
       />
       <EuiSpacer size="m" />
 
@@ -355,42 +300,18 @@ export function PoliciesTab({ saved, onSaved }: Props) {
 
       <EuiSpacer size="l" />
       <EuiFlexGroup justifyContent="flexEnd" alignItems="center" gutterSize="s">
-        {saved.enabled && (
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty
-              data-test-subj="apmTailSamplingDisable"
-              color="danger"
-              isLoading={isDisabling}
-              onClick={disable}
-            >
-              {i18n.translate('xpack.apm.tailSampling.disable', {
-                defaultMessage: 'Disable sampling',
-              })}
-            </EuiButtonEmpty>
-          </EuiFlexItem>
-        )}
-        {saved.saved && !saved.enabled && (
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty
-              data-test-subj="apmTailSamplingEnable"
-              iconType="play"
-              isLoading={isEnabling}
-              isDisabled={hasChanges}
-              onClick={enable}
-            >
-              {i18n.translate('xpack.apm.tailSampling.enable', {
-                defaultMessage: 'Enable sampling',
-              })}
-            </EuiButtonEmpty>
-          </EuiFlexItem>
-        )}
         {hasChanges && (
           <>
             <EuiFlexItem grow={false}>
               <EuiText size="xs" color="subdued" data-test-subj="apmTailSamplingUnsaved">
-                {i18n.translate('xpack.apm.tailSampling.unsavedChanges', {
-                  defaultMessage: 'Unsaved changes',
-                })}
+                {saved.saved
+                  ? i18n.translate('xpack.apm.tailSampling.unsavedChangesSaved', {
+                      defaultMessage:
+                        'Unsaved changes. Save to apply them. The switch uses the saved policies.',
+                    })
+                  : i18n.translate('xpack.apm.tailSampling.unsavedChanges', {
+                      defaultMessage: 'Unsaved changes',
+                    })}
               </EuiText>
             </EuiFlexItem>
             {saved.saved && (
