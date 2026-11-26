@@ -16,13 +16,16 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { TOUR_ANCHOR_START_FROM } from './policy_tour';
 import {
   DEFAULT_STARTER_SET,
   getStarterSetPercentage,
+  getStarterSetPolicies,
   starterSetIds,
   type StarterSetId,
 } from './starter_sets';
+import { getKeptPercentage, usePolicyPreview } from './use_policy_preview';
 
 interface Props {
   // The set the list is equal to. Undefined once the list was edited.
@@ -43,13 +46,38 @@ const setLabels: Record<StarterSetId, string> = {
   }),
 };
 
+// How much of the last hour's traces a set would keep. Shows nothing until it is known.
+function StarterSetEstimate({ id }: { id: StarterSetId }) {
+  const policies = useMemo(() => getStarterSetPolicies(id), [id]);
+  const { data } = usePolicyPreview(policies, policies.length > 0);
+  const percentage = data ? getKeptPercentage(data) : undefined;
+
+  if (percentage === undefined) {
+    return null;
+  }
+
+  return (
+    <>
+      <EuiSpacer size="s" />
+      <EuiText size="s" data-test-subj={`apmTailSamplingStarterSetEstimate_${id}`}>
+        <strong>
+          {i18n.translate('xpack.apm.tailSampling.starterSet.estimate', {
+            defaultMessage: 'Keeps about {percentage}%',
+            values: { percentage },
+          })}
+        </strong>
+      </EuiText>
+    </>
+  );
+}
+
 export function StarterSetBoxes({ selected, onSelect }: Props) {
   const radioName = useGeneratedHtmlId({ prefix: 'apmTailSamplingStarterSet' });
 
   return (
     <div data-test-subj="apmTailSamplingStartFrom">
       <EuiText size="s">
-        <strong>
+        <strong data-test-subj={TOUR_ANCHOR_START_FROM}>
           {i18n.translate('xpack.apm.tailSampling.startFrom', {
             defaultMessage: 'Start from',
           })}
@@ -101,6 +129,7 @@ export function StarterSetBoxes({ selected, onSelect }: Props) {
                     />
                   </EuiText>
                 )}
+                <StarterSetEstimate id={id} />
               </EuiCheckableCard>
             </EuiFlexItem>
           );

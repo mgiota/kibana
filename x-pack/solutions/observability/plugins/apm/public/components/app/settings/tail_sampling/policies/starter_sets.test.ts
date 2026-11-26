@@ -17,7 +17,7 @@ describe('getStarterSetPolicies', () => {
   it('creates the balanced set', () => {
     expect(getStarterSetPolicies('balanced')).toEqual([
       { name: 'keep-errors', type: 'status_code', status_code: { status_codes: ['ERROR'] } },
-      { name: 'keep-slow', type: 'latency', latency: { threshold_ms: 1000 } },
+      { name: 'keep-slow', type: 'latency', latency: { threshold_ms: 2000 } },
       { name: 'baseline', type: 'probabilistic', probabilistic: { sampling_percentage: 10 } },
     ]);
   });
@@ -45,14 +45,14 @@ describe('getStarterSetPolicies', () => {
 
 describe('createStarterPolicies', () => {
   it('leaves out the rules that are switched off', () => {
-    expect(createStarterPolicies({ keepErrors: false, keepSlow: false, percentage: 5 })).toEqual([
+    const options = { keepErrors: false, keepSlow: false, slowThresholdMs: 500, percentage: 5 };
+    expect(createStarterPolicies(options)).toEqual([
       { name: 'baseline', type: 'probabilistic', probabilistic: { sampling_percentage: 5 } },
     ]);
-    expect(
-      createStarterPolicies({ keepErrors: false, keepSlow: true, percentage: 5 }).map(
-        ({ name }) => name
-      )
-    ).toEqual(['keep-slow', 'baseline']);
+    expect(createStarterPolicies({ ...options, keepSlow: true })).toEqual([
+      { name: 'keep-slow', type: 'latency', latency: { threshold_ms: 500 } },
+      { name: 'baseline', type: 'probabilistic', probabilistic: { sampling_percentage: 5 } },
+    ]);
   });
 });
 

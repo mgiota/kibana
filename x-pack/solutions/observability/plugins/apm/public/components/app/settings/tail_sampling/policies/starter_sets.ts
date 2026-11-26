@@ -18,20 +18,23 @@ export const DEFAULT_STARTER_SET: StarterSetId = 'balanced';
 export interface StarterSetOptions {
   keepErrors: boolean;
   keepSlow: boolean;
+  // A trace at least this long is slow, in milliseconds.
+  slowThresholdMs: number;
   // Share of all traces to keep, in percent.
   percentage: number;
 }
 
 // Placeholder values until product decides the defaults.
 const starterSetOptions: Record<Exclude<StarterSetId, 'empty'>, StarterSetOptions> = {
-  balanced: { keepErrors: true, keepSlow: true, percentage: 10 },
-  more: { keepErrors: true, keepSlow: true, percentage: 25 },
+  balanced: { keepErrors: true, keepSlow: true, slowThresholdMs: 2000, percentage: 10 },
+  more: { keepErrors: true, keepSlow: true, slowThresholdMs: 2000, percentage: 25 },
 };
 
-/** The form's default policies for the chosen rules, with the chosen share. */
+/** The form's default policies for the chosen rules, with the chosen threshold and share. */
 export const createStarterPolicies = ({
   keepErrors,
   keepSlow,
+  slowThresholdMs,
   percentage,
 }: StarterSetOptions): TailSamplingPolicy[] => {
   const policies: TailSamplingPolicy[] = [];
@@ -41,7 +44,10 @@ export const createStarterPolicies = ({
     policies.push(createFormPolicy('status_code', names()));
   }
   if (keepSlow) {
-    policies.push(createFormPolicy('latency', names()));
+    policies.push({
+      ...createFormPolicy('latency', names()),
+      latency: { threshold_ms: slowThresholdMs },
+    });
   }
   policies.push({
     ...createFormPolicy('probabilistic', names()),

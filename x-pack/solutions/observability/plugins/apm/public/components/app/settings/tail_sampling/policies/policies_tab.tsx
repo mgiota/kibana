@@ -32,6 +32,7 @@ import { useApmPluginContext } from '../../../../../context/apm_plugin/use_apm_p
 import { getApmInternalServices } from '../../../../../plugin';
 import { PolicyFlyout } from './policy_flyout';
 import { PolicyList } from './policy_list';
+import { PolicyPreviewSummary } from './policy_preview_summary';
 import { PolicyTour, TOUR_ANCHOR_POLICIES } from './policy_tour';
 import { StarterSetBoxes } from './starter_set_boxes';
 import { DEFAULT_STARTER_SET, findStarterSet, getStarterSetPolicies } from './starter_sets';
@@ -263,14 +264,15 @@ export function PoliciesTab({ saved, onSaved }: Props) {
       )}
 
       <EuiFlexGroup
-        justifyContent="spaceBetween"
+        justifyContent="flexStart"
         alignItems="center"
+        gutterSize="s"
         responsive={false}
-        data-test-subj={TOUR_ANCHOR_POLICIES}
       >
         <EuiFlexItem grow={false}>
           <EuiTitle size="xs">
-            <h3>
+            {/* The tour points at the title only. Pointing at the whole row makes the row shrink. */}
+            <h3 data-test-subj={TOUR_ANCHOR_POLICIES}>
               {i18n.translate('xpack.apm.tailSampling.policies.title', {
                 defaultMessage: 'Policies',
               })}
@@ -278,7 +280,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           </EuiTitle>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButton
+          <EuiButtonEmpty
             data-test-subj="apmTailSamplingAddPolicy"
             iconType="plusCircle"
             size="s"
@@ -287,7 +289,7 @@ export function PoliciesTab({ saved, onSaved }: Props) {
             {i18n.translate('xpack.apm.tailSampling.addPolicy', {
               defaultMessage: 'Add policy',
             })}
-          </EuiButton>
+          </EuiButtonEmpty>
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="m" />
@@ -326,6 +328,12 @@ export function PoliciesTab({ saved, onSaved }: Props) {
           <EuiSpacer size="s" />
         </React.Fragment>
       ))}
+
+      <PolicyPreviewSummary
+        policies={policies}
+        isEnabled={policies.length > 0 && localDiagnostics.length === 0}
+      />
+      <EuiSpacer size="m" />
 
       {renderPolicies()}
 

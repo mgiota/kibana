@@ -13,9 +13,10 @@ import { useLocalStorage } from '../../../../../hooks/use_local_storage';
 
 export const TAIL_SAMPLING_TOUR_SEEN_KEY = 'apm.tailSampling.tourSeen';
 
-// The parts of the page the steps point at.
-export const TOUR_ANCHOR_START_FROM = 'apmTailSamplingStartFrom';
-export const TOUR_ANCHOR_POLICIES = 'apmTailSamplingPoliciesHeader';
+// The parts of the page the steps point at. Each is a small element: the tour wraps its anchor
+// in a container that shrinks to fit, which would narrow a full-width row.
+export const TOUR_ANCHOR_START_FROM = 'apmTailSamplingStartFromLabel';
+export const TOUR_ANCHOR_POLICIES = 'apmTailSamplingPoliciesTitle';
 export const TOUR_ANCHOR_SAVE = 'apmTailSamplingSave';
 
 const TOUR_WIDTH = 320;
