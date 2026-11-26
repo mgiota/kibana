@@ -8,12 +8,14 @@ import { getTailSamplingRoute } from './get_tail_sampling';
 import { validateTailSamplingRoute } from './validate_tail_sampling';
 import { saveTailSamplingRoute } from './save_tail_sampling';
 import { disableTailSamplingRoute } from './disable_tail_sampling';
+import { previewTailSamplingRoute } from './preview_tail_sampling';
 
 export const tailSamplingRouteDefinitions = {
   get: getTailSamplingRoute,
   validate: validateTailSamplingRoute,
   save: saveTailSamplingRoute,
   disable: disableTailSamplingRoute,
+  preview: previewTailSamplingRoute,
 };
 
 export type {
@@ -22,6 +24,10 @@ export type {
   TailSamplingProcessor,
   TailSamplingDiagnostic,
   TailSamplingResponse,
+  TailSamplingPreviewBucket,
+  TailSamplingPreviewCounts,
+  TailSamplingPreviewPolicyCount,
+  TailSamplingPreviewResponse,
   ValidateTailSamplingResponse,
 } from './types';
 export {

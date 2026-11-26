@@ -94,3 +94,41 @@ export interface ValidateTailSamplingResponse {
   // Hash of the config as validated.
   hash: string;
 }
+
+/** How many traces a policy would keep, counted once per trace. */
+export interface TailSamplingPreviewPolicyCount {
+  policyName: string;
+  // Traces this policy keeps that no earlier keep policy in the list already keeps.
+  kept: number;
+}
+
+export interface TailSamplingPreviewCounts {
+  // Distinct traces in the period.
+  total: number;
+  // Traces the config would keep.
+  kept: number;
+  // Traces a drop policy matches.
+  dropped: number;
+  keptByPolicy: TailSamplingPreviewPolicyCount[];
+}
+
+export interface TailSamplingPreviewBucket extends TailSamplingPreviewCounts {
+  // Start of the bucket, in milliseconds since the epoch.
+  timestamp: number;
+}
+
+/**
+ * An estimate from the stored traces, not what the collector will do. Counts are
+ * approximate, and a policy the estimate cannot evaluate is left out and named.
+ */
+export interface TailSamplingPreviewResponse extends TailSamplingPreviewCounts {
+  // `all_traces` while sampling is off. Once it is on, only kept traces are stored, so
+  // the estimate is based on those.
+  basis: 'all_traces' | 'kept_traces';
+  // The period the estimate covers, in milliseconds since the epoch.
+  start: number;
+  end: number;
+  buckets: TailSamplingPreviewBucket[];
+  // Names of the policies the estimate leaves out.
+  unsupportedPolicies: string[];
+}
